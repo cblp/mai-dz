@@ -1,6 +1,19 @@
 .DELETE_ON_ERROR:
 
-default: test
+test: db.sqlite run
+
+.PHONY: run
+run: bin/aw
+	LD_LIBRARY_PATH=lib PATH=bin aw
+
+bin/aw:
+	stack							\
+		--local-bin-path=bin				\
+		build						\
+		--pedantic					\
+		--ghc-options=-Wincomplete-record-updates	\
+		--ghc-options=-Wincomplete-uni-patterns		\
+		--copy-bins
 
 build/AdventureWorks-oltp-install-script.zip:
 	mkdir -p build
@@ -15,5 +28,3 @@ build/instawdb.sql: build/AdventureWorks-oltp-install-script.zip
 db.sqlite: build/instawdb.sql loadCsv.sql
 	rm -f $@
 	cat loadCsv.sql | sqlite3 $@
-
-test: db.sqlite

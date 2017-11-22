@@ -14,7 +14,9 @@
 .hpc
 .hsenv
 .stack-work/
+/bin
 /build/
+/db.sqlite
 cabal-dev
 cabal.project.local
 cabal.sandbox.config
