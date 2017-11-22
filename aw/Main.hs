@@ -13,7 +13,7 @@ main = withScopedPtr (getArgs >>= QApplication.new) mainApp
 
 mainApp :: QApplication -> IO ()
 mainApp _ = do
-    hello <- QLabel.newWithText "hello"
-    QFrame.setFrameShape hello QFrame.StyledPanel
+    hello <- newWithText "hello"
+    setFrameShape hello StyledPanel
     QWidget.show hello
-    QCoreApplication.exec
+    exec
