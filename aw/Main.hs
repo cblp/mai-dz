@@ -1,19 +1,19 @@
 -- http://khumba.net/docs/qtah-qt5-0.3.0
 
-import           Foreign.Hoppy.Runtime                  (withScopedPtr)
-import qualified Graphics.UI.Qtah.Core.QCoreApplication as QCoreApplication
-import qualified Graphics.UI.Qtah.Widgets.QApplication  as QApplication
-import qualified Graphics.UI.Qtah.Widgets.QLabel        as QLabel
-import qualified Graphics.UI.Qtah.Widgets.QWidget       as QWidget
-import           System.Environment                     (getArgs)
+import           Foreign.Hoppy.Runtime (withScopedPtr)
+import           Graphics.UI.Qtah.Core.QCoreApplication as QCoreApplication
+import           Graphics.UI.Qtah.Widgets.QApplication as QApplication
+import           Graphics.UI.Qtah.Widgets.QFrame as QFrame
+import           Graphics.UI.Qtah.Widgets.QLabel as QLabel
+import           Graphics.UI.Qtah.Widgets.QWidget as QWidget
+import           System.Environment (getArgs)
 
 main :: IO ()
-main = withScopedPtr (getArgs >>= QApplication.new) mainUi
+main = withScopedPtr (getArgs >>= QApplication.new) mainApp
 
-mainUi :: t -> IO ()
-mainUi _ = do
-    do  hello <- QLabel.newWithText "hello"
-        QLabel.setMargin hello 20
-        QWidget.show hello
-    QWidget.show =<< QLabel.newWithText "world"
+mainApp :: QApplication -> IO ()
+mainApp _ = do
+    hello <- QLabel.newWithText "hello"
+    QFrame.setFrameShape hello QFrame.StyledPanel
+    QWidget.show hello
     QCoreApplication.exec
