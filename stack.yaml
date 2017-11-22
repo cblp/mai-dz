@@ -1,0 +1,9 @@
+resolver: lts-9.14
+
+extra-deps:
+  - hoppy-generator-0.3.3  # for hoppy-runtime
+  - hoppy-runtime-0.3.1  # for qtah-qt5
+  - hoppy-std-0.3.0  # for hoppy-runtime
+  - qtah-cpp-qt5-0.3.1  # for qtah-qt5
+  - qtah-generator-0.3.0  # for qtah-qt5
+  - qtah-qt5-0.3.0  # for aw

@@ -1,0 +1,11 @@
+name: adventureworks-viewer
+
+executables:
+  aw:
+    main: Main
+    source-dirs: aw
+
+dependencies:
+  - base
+  - hoppy-runtime
+  - qtah-qt5
