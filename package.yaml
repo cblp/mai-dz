@@ -8,4 +8,4 @@ executables:
 dependencies:
   - base
   - hoppy-runtime
-  - qtah-qt5
+  - qtah # qtah-qt5 for the release

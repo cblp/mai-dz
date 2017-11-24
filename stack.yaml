@@ -1,9 +1,21 @@
 resolver: lts-9.14
 
+packages:
+  - .
+  - extra-dep: true
+    location: ../qtah/qtah
+  - extra-dep: true
+    location: ../qtah/qtah-cpp
+  - extra-dep: true
+    location: ../qtah/qtah-generator
+
 extra-deps:
   - hoppy-generator-0.3.3  # for hoppy-runtime
   - hoppy-runtime-0.3.1  # for qtah-qt5
   - hoppy-std-0.3.0  # for hoppy-runtime
-  - qtah-cpp-qt5-0.3.1  # for qtah-qt5
-  - qtah-generator-0.3.0  # for qtah-qt5
-  - qtah-qt5-0.3.0  # for aw
+
+flags:
+  qtah:
+    qt5: true
+  qtah-cpp:
+    qt5: true
