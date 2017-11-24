@@ -1,7 +1,8 @@
 .DELETE_ON_ERROR:
+SHELL = bash -eu -o pipefail
 
 .PHONY: run
-run: db.sqlite
+run: db.sqlite lib/libqtah.so
 	LD_LIBRARY_PATH=lib stack build --exec aw
 
 build/AdventureWorks-oltp-install-script.zip:
@@ -17,3 +18,11 @@ build/instawdb.sql: build/AdventureWorks-oltp-install-script.zip
 db.sqlite: build/instawdb.sql loadCsv.sql
 	rm -f $@
 	cat loadCsv.sql | sqlite3 $@
+
+lib/libqtah.so:
+	mkdir -p lib
+	stack exec --							\
+		ghc-pkg --simple-output field qtah-cpp library-dirs	\
+	| while read library_dirs; do					\
+		cp -r $$library_dirs/* lib/;				\
+	done

@@ -17,6 +17,7 @@
 /bin
 /build/
 /db.sqlite
+/lib
 cabal-dev
 cabal.project.local
 cabal.sandbox.config
