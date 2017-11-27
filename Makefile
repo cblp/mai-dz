@@ -23,6 +23,6 @@ lib/libqtah.so:
 	mkdir -p lib
 	stack exec --							\
 		ghc-pkg --simple-output field qtah-cpp library-dirs	\
-	| while read library_dirs; do					\
-		cp -r $$library_dirs/* lib/;				\
+	| while read -r library_dirs; do				\
+		cp -r "$$library_dirs"/* lib/;				\
 	done
