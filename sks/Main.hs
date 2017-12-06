@@ -7,6 +7,7 @@ import           Graphics.UI.Qtah.Widgets.QBoxLayout as QBoxLayout
 import           Graphics.UI.Qtah.Widgets.QHBoxLayout as QHBoxLayout
 import           Graphics.UI.Qtah.Widgets.QLayout as QLayout
 import           Graphics.UI.Qtah.Widgets.QPushButton as QPushButton
+import           Graphics.UI.Qtah.Widgets.QTreeView as QTreeView
 import           Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import           Graphics.UI.Qtah.Widgets.QVBoxLayout as QVBoxLayout
 import           Graphics.UI.Qtah.Widgets.QWidget as QWidget
@@ -42,6 +43,7 @@ main = withApp $ \_ -> do
         addStretch leftPanel
 
     do  workArea <- QTreeWidget.new
+        setHeaderHidden workArea True
         QBoxLayout.addWidget mainLayout workArea
 
     do  rightPanel <- QVBoxLayout.new
