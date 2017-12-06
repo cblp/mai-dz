@@ -1,9 +1,12 @@
-name: adventureworks-viewer
+name: mai-dz
 
 executables:
   aw:
     main: Main
     source-dirs: aw
+  sks:
+    main: Main
+    source-dirs: sks
 
 dependencies:
   - base

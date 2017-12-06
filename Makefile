@@ -4,9 +4,13 @@ SHELL = bash -eu -o pipefail
 QTAH_LIB = lib/libqtah.dylib
 # QTAH_LIB = lib/libqtah.so
 
-.PHONY: run
-run: db.sqlite $(QTAH_LIB)
-	LD_LIBRARY_PATH=lib stack build --exec aw
+.PHONY: sks
+sks: $(QTAH_LIB)
+	LD_LIBRARY_PATH=lib stack build :sks --exec sks
+
+.PHONY: aw
+aw: db.sqlite $(QTAH_LIB)
+	LD_LIBRARY_PATH=lib stack build :aw --exec aw
 
 build/AdventureWorks-oltp-install-script.zip:
 	mkdir -p build
