@@ -3,12 +3,14 @@ import           Data.IORef (IORef, modifyIORef, newIORef, readIORef)
 import           Foreign.Hoppy.Runtime (nullptr, withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Core.QSize as QSize
+import           Graphics.UI.Qtah.Gui.QIcon (QIcon)
 import qualified Graphics.UI.Qtah.Gui.QIcon as QIcon
 import           Graphics.UI.Qtah.Signal (connect_)
 import           Graphics.UI.Qtah.Widgets.QAbstractButton (clickedSignal,
                                                            setIconSize)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
-import           Graphics.UI.Qtah.Widgets.QBoxLayout (addStretch, addWidget)
+import           Graphics.UI.Qtah.Widgets.QBoxLayout (QBoxLayoutPtr, addStretch,
+                                                      addWidget)
 import qualified Graphics.UI.Qtah.Widgets.QHBoxLayout as QHBoxLayout
 import           Graphics.UI.Qtah.Widgets.QLayout (addItem)
 import qualified Graphics.UI.Qtah.Widgets.QMessageBox as QMessageBox
@@ -56,7 +58,8 @@ makeAppWindow = do
     workArea <- QTreeWidget.newWithParent appWindow
     setHeaderHidden workArea True
 
-    let addCablingV = do
+    let addCablingV :: IO ()
+        addCablingV = do
             n <- preIncrement counter
             item <-
                 QTreeWidgetItem.newWithParentTreeAndStringsAndType
@@ -66,7 +69,8 @@ makeAppWindow = do
             setIcon item 0 connectionV
             setCurrentItem workArea item
 
-    let addCablingH = do
+    let addCablingH :: IO ()
+        addCablingH = do
             curItem <- currentItem workArea
             curItemType <-
                 if curItem /= nullptr then
@@ -91,7 +95,8 @@ makeAppWindow = do
             setIcon item 0 connectionH
             setCurrentItem workArea item
 
-    let addWorkPlace = do
+    let addWorkPlace :: IO ()
+        addWorkPlace = do
             curItem <- currentItem workArea
             curItemType <-
                 if curItem /= nullptr then
@@ -116,7 +121,9 @@ makeAppWindow = do
             setIcon item 0 laptop
             setCurrentItem workArea item
 
-    let addButton icon text layout handler = do
+    let addButton ::
+            QBoxLayoutPtr layout => QIcon -> String -> layout -> IO () -> IO ()
+        addButton icon text layout handler = do
             button <-
                 QPushButton.newWithIconAndTextAndParent icon text appWindow
             setIconSize button buttonIconSize
