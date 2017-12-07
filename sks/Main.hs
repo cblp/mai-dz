@@ -14,7 +14,7 @@ import qualified Graphics.UI.Qtah.Widgets.QPushButton as QPushButton
 import           Graphics.UI.Qtah.Widgets.QTreeView (setHeaderHidden)
 import           Graphics.UI.Qtah.Widgets.QTreeWidget (addTopLevelItem)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
-import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (setIcon, setText)
+import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (setIcon)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import qualified Graphics.UI.Qtah.Widgets.QVBoxLayout as QVBoxLayout
 import           Graphics.UI.Qtah.Widgets.QWidget (QWidget, setLayout)
@@ -54,9 +54,11 @@ makeAppWindow = do
 
     let addVerticalCabling = do
             n <- preIncrement counter
-            item <- QTreeWidgetItem.newWithType $ fromEnum VerticalCabling
+            item <-
+                QTreeWidgetItem.newWithStringsAndType
+                    ["Вертикальная подсистема " ++ show n]
+                    (fromEnum VerticalCabling)
             setIcon item 0 connectionV
-            setText item 0 $ "Вертикальная подсистема " ++ show n
             addTopLevelItem workArea item
 
     let addButton icon text layout handler = do
