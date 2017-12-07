@@ -14,8 +14,8 @@ import           Graphics.UI.Qtah.Widgets.QLayout (addItem)
 import qualified Graphics.UI.Qtah.Widgets.QMessageBox as QMessageBox
 import qualified Graphics.UI.Qtah.Widgets.QPushButton as QPushButton
 import           Graphics.UI.Qtah.Widgets.QTreeView (setHeaderHidden)
-import           Graphics.UI.Qtah.Widgets.QTreeWidget (addTopLevelItem,
-                                                       currentItem)
+import           Graphics.UI.Qtah.Widgets.QTreeWidget (currentItem,
+                                                       setCurrentItem)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (getType, setIcon)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
@@ -58,11 +58,12 @@ makeAppWindow = do
     let addCablingV = do
             n <- preIncrement counter
             item <-
-                QTreeWidgetItem.newWithStringsAndType
+                QTreeWidgetItem.newWithParentTreeAndStringsAndType
+                    workArea
                     ["Вертикальная подсистема " ++ show n]
                     (fromEnum CablingV)
             setIcon item 0 connectionV
-            addTopLevelItem workArea item
+            setCurrentItem workArea item
 
     let addCablingH = do
             curItem <- currentItem workArea
@@ -80,6 +81,7 @@ makeAppWindow = do
                         ["Горизонтальная подсистема " ++ show n]
                         (fromEnum CablingV)
                 setIcon item 0 connectionH
+                setCurrentItem workArea item
             else void $
                 QMessageBox.information
                     appWindow
