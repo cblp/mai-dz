@@ -1,0 +1,2 @@
+https://thenounproject.com/chanut-is/collection/file-and-folder-fill-icons-set
+convert -crop 512x512+94+47

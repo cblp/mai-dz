@@ -12,3 +12,5 @@ dependencies:
   - base
   - hoppy-runtime
   - qtah # qtah-qt5 for the release
+
+ghc-options: -Werror -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
