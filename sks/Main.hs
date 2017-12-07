@@ -22,6 +22,9 @@ import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           Numeric.Natural (Natural)
 import           System.Environment (getArgs)
 
+data ItemType = VerticalCabling | HorizontalCabling | WorkPlace
+    deriving (Enum)
+
 main :: IO ()
 main = withApp $ \_ -> do
     appWindow <- makeAppWindow
@@ -51,7 +54,7 @@ makeAppWindow = do
 
     let addVerticalCabling = do
             n <- preIncrement counter
-            item <- QTreeWidgetItem.new
+            item <- QTreeWidgetItem.newWithType $ fromEnum VerticalCabling
             setIcon item 0 connectionV
             setText item 0 $ "Вертикальная подсистема " ++ show n
             addTopLevelItem workArea item
