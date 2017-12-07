@@ -5,7 +5,7 @@ import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Core.QSize as QSize
 import qualified Graphics.UI.Qtah.Gui.QIcon as QIcon
 import           Graphics.UI.Qtah.Signal (connect_)
-import           Graphics.UI.Qtah.Widgets.QAbstractButton (pressedSignal,
+import           Graphics.UI.Qtah.Widgets.QAbstractButton (clickedSignal,
                                                            setIconSize)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
 import           Graphics.UI.Qtah.Widgets.QBoxLayout (addStretch, addWidget)
@@ -93,7 +93,7 @@ makeAppWindow = do
                 QPushButton.newWithIconAndTextAndParent icon text appWindow
             setIconSize button buttonIconSize
             addWidget layout button
-            connect_ button pressedSignal handler
+            connect_ button clickedSignal $ \_ -> handler
 
     do  leftPanel <- QVBoxLayout.new
         addItem mainLayout leftPanel
