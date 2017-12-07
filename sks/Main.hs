@@ -17,7 +17,8 @@ import           Graphics.UI.Qtah.Widgets.QTreeView (setHeaderHidden)
 import           Graphics.UI.Qtah.Widgets.QTreeWidget (currentItem,
                                                        setCurrentItem)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
-import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (getType, setIcon)
+import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (getType, parent,
+                                                           setIcon)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import qualified Graphics.UI.Qtah.Widgets.QVBoxLayout as QVBoxLayout
 import           Graphics.UI.Qtah.Widgets.QWidget (QWidget, setLayout)
@@ -67,33 +68,35 @@ makeAppWindow = do
 
     let addCablingH = do
             curItem <- currentItem workArea
-            curItemIsCablingV <-
-                if curItem /= nullptr then do
-                    curItemType <- getType curItem
-                    pure $ curItemType == fromEnum CablingV
+            curItemType <-
+                if curItem /= nullptr then
+                    Just . toEnum <$> getType curItem
                 else
-                    pure False
-            if curItemIsCablingV then do
-                n <- preIncrement counter
-                item <-
-                    QTreeWidgetItem.newWithParentItemAndStringsAndType
-                        curItem
-                        ["Горизонтальная подсистема " ++ show n]
-                        (fromEnum CablingH)
-                setIcon item 0 connectionH
-                setCurrentItem workArea item
-            else void $
-                QMessageBox.information
-                    appWindow
-                    "Не выбрана вертикальная подсистема"
-                    "Выберите вертикальную подсистему, чтобы добавить к ней горизонтальную."
+                    pure Nothing
+            case curItemType of
+                Just CablingV -> addCablingH' curItem
+                Just CablingH -> addCablingH' =<< parent curItem
+                _ -> void $
+                    QMessageBox.information
+                        appWindow
+                        "Не выбрана вертикальная подсистема"
+                        "Выберите вертикальную подсистему, чтобы добавить к ней горизонтальную."
+        addCablingH' curItem = do
+            n <- preIncrement counter
+            item <-
+                QTreeWidgetItem.newWithParentItemAndStringsAndType
+                    curItem
+                    ["Горизонтальная подсистема " ++ show n]
+                    (fromEnum CablingH)
+            setIcon item 0 connectionH
+            setCurrentItem workArea item
 
     let addButton icon text layout handler = do
             button <-
                 QPushButton.newWithIconAndTextAndParent icon text appWindow
             setIconSize button buttonIconSize
             addWidget layout button
-            connect_ button clickedSignal $ \_ -> handler
+            connect_ button clickedSignal $ const handler
 
     do  leftPanel <- QVBoxLayout.new
         addItem mainLayout leftPanel
