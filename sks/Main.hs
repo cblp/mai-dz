@@ -79,7 +79,7 @@ makeAppWindow = do
                     QTreeWidgetItem.newWithParentItemAndStringsAndType
                         curItem
                         ["Горизонтальная подсистема " ++ show n]
-                        (fromEnum CablingV)
+                        (fromEnum CablingH)
                 setIcon item 0 connectionH
                 setCurrentItem workArea item
             else void $
