@@ -1,5 +1,6 @@
+import           Control.Monad (void)
 import           Data.IORef (IORef, modifyIORef, newIORef, readIORef)
-import           Foreign.Hoppy.Runtime (withScopedPtr)
+import           Foreign.Hoppy.Runtime (nullptr, withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Core.QSize as QSize
 import qualified Graphics.UI.Qtah.Gui.QIcon as QIcon
@@ -10,11 +11,13 @@ import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
 import           Graphics.UI.Qtah.Widgets.QBoxLayout (addStretch, addWidget)
 import qualified Graphics.UI.Qtah.Widgets.QHBoxLayout as QHBoxLayout
 import           Graphics.UI.Qtah.Widgets.QLayout (addItem)
+import qualified Graphics.UI.Qtah.Widgets.QMessageBox as QMessageBox
 import qualified Graphics.UI.Qtah.Widgets.QPushButton as QPushButton
 import           Graphics.UI.Qtah.Widgets.QTreeView (setHeaderHidden)
-import           Graphics.UI.Qtah.Widgets.QTreeWidget (addTopLevelItem)
+import           Graphics.UI.Qtah.Widgets.QTreeWidget (addTopLevelItem,
+                                                       currentItem)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
-import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (setIcon)
+import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (getType, setIcon)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import qualified Graphics.UI.Qtah.Widgets.QVBoxLayout as QVBoxLayout
 import           Graphics.UI.Qtah.Widgets.QWidget (QWidget, setLayout)
@@ -22,7 +25,7 @@ import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           Numeric.Natural (Natural)
 import           System.Environment (getArgs)
 
-data ItemType = VerticalCabling | HorizontalCabling | WorkPlace
+data ItemType = CablingV | CablingH | WorkPlace
     deriving (Enum)
 
 main :: IO ()
@@ -52,14 +55,36 @@ makeAppWindow = do
     workArea <- QTreeWidget.newWithParent appWindow
     setHeaderHidden workArea True
 
-    let addVerticalCabling = do
+    let addCablingV = do
             n <- preIncrement counter
             item <-
                 QTreeWidgetItem.newWithStringsAndType
                     ["Вертикальная подсистема " ++ show n]
-                    (fromEnum VerticalCabling)
+                    (fromEnum CablingV)
             setIcon item 0 connectionV
             addTopLevelItem workArea item
+
+    let addCablingH = do
+            curItem <- currentItem workArea
+            curItemIsCablingV <-
+                if curItem /= nullptr then do
+                    curItemType <- getType curItem
+                    pure $ curItemType == fromEnum CablingV
+                else
+                    pure False
+            if curItemIsCablingV then do
+                n <- preIncrement counter
+                item <-
+                    QTreeWidgetItem.newWithParentItemAndStringsAndType
+                        curItem
+                        ["Горизонтальная подсистема " ++ show n]
+                        (fromEnum CablingV)
+                setIcon item 0 connectionH
+            else void $
+                QMessageBox.information
+                    appWindow
+                    "Не выбрана вертикальная подсистема"
+                    "Выберите вертикальную подсистему, чтобы добавить к ней горизонтальную."
 
     let addButton icon text layout handler = do
             button <-
@@ -75,9 +100,12 @@ makeAppWindow = do
             connectionV
             "Добавить\nвертикальную подсистему"
             leftPanel
-            addVerticalCabling
-        addButton connectionH "Добавить\nгоризонтальную подсистему" leftPanel $
-            pure ()
+            addCablingV
+        addButton
+            connectionH
+            "Добавить\nгоризонтальную подсистему"
+            leftPanel
+            addCablingH
         addButton laptop "Добавить\nрабочее место" leftPanel $ pure ()
         addStretch leftPanel
 
