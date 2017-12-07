@@ -91,6 +91,31 @@ makeAppWindow = do
             setIcon item 0 connectionH
             setCurrentItem workArea item
 
+    let addWorkPlace = do
+            curItem <- currentItem workArea
+            curItemType <-
+                if curItem /= nullptr then
+                    Just . toEnum <$> getType curItem
+                else
+                    pure Nothing
+            case curItemType of
+                Just CablingH  -> addWorkPlace' curItem
+                Just WorkPlace -> addWorkPlace' =<< parent curItem
+                _ -> void $
+                    QMessageBox.information
+                        appWindow
+                        "Не выбрана горизонтальная подсистема"
+                        "Выберите горизонтальную подсистему, чтобы добавить к ней рабочее место."
+        addWorkPlace' curItem = do
+            n <- preIncrement counter
+            item <-
+                QTreeWidgetItem.newWithParentItemAndStringsAndType
+                    curItem
+                    ["Рабочее место " ++ show n]
+                    (fromEnum WorkPlace)
+            setIcon item 0 laptop
+            setCurrentItem workArea item
+
     let addButton icon text layout handler = do
             button <-
                 QPushButton.newWithIconAndTextAndParent icon text appWindow
@@ -111,7 +136,7 @@ makeAppWindow = do
             "Добавить\nгоризонтальную подсистему"
             leftPanel
             addCablingH
-        addButton laptop "Добавить\nрабочее место" leftPanel $ pure ()
+        addButton laptop "Добавить\nрабочее место" leftPanel addWorkPlace
         addStretch leftPanel
 
     addWidget mainLayout workArea
