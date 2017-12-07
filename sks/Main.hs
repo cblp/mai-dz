@@ -1,5 +1,8 @@
 import           Control.Monad (void)
+import           Data.Foldable (fold)
 import           Data.IORef (IORef, modifyIORef, newIORef, readIORef)
+import           Data.Monoid (Sum (Sum))
+import           Data.Traversable (for)
 import           Foreign.Hoppy.Runtime (nullptr, withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Core.QSize as QSize
@@ -11,15 +14,19 @@ import           Graphics.UI.Qtah.Widgets.QAbstractButton (clickedSignal,
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
 import           Graphics.UI.Qtah.Widgets.QBoxLayout (QBoxLayoutPtr, addStretch,
                                                       addWidget)
+import qualified Graphics.UI.Qtah.Widgets.QFileDialog as QFileDialog
 import qualified Graphics.UI.Qtah.Widgets.QHBoxLayout as QHBoxLayout
 import           Graphics.UI.Qtah.Widgets.QLayout (addItem)
 import qualified Graphics.UI.Qtah.Widgets.QMessageBox as QMessageBox
 import qualified Graphics.UI.Qtah.Widgets.QPushButton as QPushButton
 import           Graphics.UI.Qtah.Widgets.QTreeView (setHeaderHidden)
 import           Graphics.UI.Qtah.Widgets.QTreeWidget (currentItem,
-                                                       setCurrentItem)
+                                                       setCurrentItem,
+                                                       topLevelItem,
+                                                       topLevelItemCount)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
-import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (getType, parent,
+import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (child, childCount,
+                                                           getType, parent,
                                                            setIcon)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import qualified Graphics.UI.Qtah.Widgets.QVBoxLayout as QVBoxLayout
@@ -121,6 +128,28 @@ makeAppWindow = do
             setIcon item 0 laptop
             setCurrentItem workArea item
 
+    let saveText :: IO ()
+        saveText = do
+            fileName <-
+                QFileDialog.getSaveFileName
+                    appWindow "Сохранить текстовое описание" "" ""
+            cablingVCount <- topLevelItemCount workArea
+            (Sum cablingHCount, Sum workPlaceCount) <-
+                fmap fold $ for [0 .. cablingVCount - 1] $ \i -> do
+                    cablingV <- topLevelItem workArea i
+                    cablingHCount <- childCount cablingV
+                    workPlaceCount <-
+                        fmap fold $ for [0 .. cablingHCount - 1] $ \j -> do
+                            cablingH <- child cablingV j
+                            Sum <$> childCount cablingH
+                    pure (Sum cablingHCount, workPlaceCount)
+            writeFile fileName $
+                unlines
+                    [ "Вертикальных систем: " ++ show cablingVCount
+                    , "Горизонтальных систем: " ++ show cablingHCount
+                    , "Рабочих мест: " ++ show workPlaceCount
+                    ]
+
     let addButton ::
             QBoxLayoutPtr layout => QIcon -> String -> layout -> IO () -> IO ()
         addButton icon text layout handler = do
@@ -152,7 +181,7 @@ makeAppWindow = do
         addItem mainLayout rightPanel
 
         addStretch rightPanel
-        addButton fileList "Сохранить\nтекстовое описание" rightPanel $ pure ()
+        addButton fileList "Сохранить\nтекстовое описание" rightPanel saveText
         addButton fileImage "Сохранить\nизображение" rightPanel $ pure ()
 
     pure appWindow
