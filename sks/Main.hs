@@ -31,7 +31,7 @@ import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (child, childCount,
                                                            setIcon)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import qualified Graphics.UI.Qtah.Widgets.QVBoxLayout as QVBoxLayout
-import           Graphics.UI.Qtah.Widgets.QWidget (QWidget, setLayout)
+import           Graphics.UI.Qtah.Widgets.QWidget (QWidget, grab, setLayout)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           Numeric.Natural (Natural)
 import           System.Environment (getArgs)
@@ -164,7 +164,7 @@ makeMainWindow = do
                     "cabling.png"
                     "Images (*.png)"
             unless (null fileName) $ do
-                shot <- QWidget.grab workArea
+                shot <- grab workArea
                 ok <- save shot fileName
                 unless ok $ void $
                     QMessageBox.critical
