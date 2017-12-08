@@ -1,4 +1,4 @@
-import           Control.Monad (void)
+import           Control.Monad (unless, void)
 import           Data.Foldable (fold)
 import           Data.IORef (IORef, modifyIORef, newIORef, readIORef)
 import           Data.Monoid (Sum (Sum))
@@ -8,6 +8,7 @@ import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Core.QSize as QSize
 import           Graphics.UI.Qtah.Gui.QIcon (QIcon)
 import qualified Graphics.UI.Qtah.Gui.QIcon as QIcon
+import           Graphics.UI.Qtah.Gui.QPixmap (save)
 import           Graphics.UI.Qtah.Signal (connect_)
 import           Graphics.UI.Qtah.Widgets.QAbstractButton (clickedSignal,
                                                            setIconSize)
@@ -40,14 +41,14 @@ data ItemType = CablingV | CablingH | WorkPlace
 
 main :: IO ()
 main = withApp $ \_ -> do
-    appWindow <- makeAppWindow
-    QWidget.show appWindow
+    mainWindow <- makeMainWindow
+    QWidget.show mainWindow
     exec
   where
     withApp = withScopedPtr $ getArgs >>= QApplication.new
 
-makeAppWindow :: IO QWidget
-makeAppWindow = do
+makeMainWindow :: IO QWidget
+makeMainWindow = do
     connectionH <- QIcon.newWithFile "icons/connectionH.png"
     connectionV <- QIcon.newWithFile "icons/connectionV.png"
     fileImage   <- QIcon.newWithFile "icons/fileImage.png"
@@ -58,11 +59,11 @@ makeAppWindow = do
 
     counter <- newIORef (0 :: Natural)
 
-    appWindow <- QWidget.new
+    mainWindow <- QWidget.new
     mainLayout <- QHBoxLayout.new
-    setLayout appWindow mainLayout
+    setLayout mainWindow mainLayout
 
-    workArea <- QTreeWidget.newWithParent appWindow
+    workArea <- QTreeWidget.newWithParent mainWindow
     setHeaderHidden workArea True
 
     let addCablingV :: IO ()
@@ -88,8 +89,8 @@ makeAppWindow = do
                 Just CablingV -> addCablingH' curItem
                 Just CablingH -> addCablingH' =<< parent curItem
                 _ -> void $
-                    QMessageBox.information
-                        appWindow
+                    QMessageBox.critical
+                        mainWindow
                         "Не выбрана вертикальная подсистема"
                         "Выберите вертикальную подсистему, чтобы добавить к ней горизонтальную."
         addCablingH' curItem = do
@@ -114,8 +115,8 @@ makeAppWindow = do
                 Just CablingH  -> addWorkPlace' curItem
                 Just WorkPlace -> addWorkPlace' =<< parent curItem
                 _ -> void $
-                    QMessageBox.information
-                        appWindow
+                    QMessageBox.critical
+                        mainWindow
                         "Не выбрана горизонтальная подсистема"
                         "Выберите горизонтальную подсистему, чтобы добавить к ней рабочее место."
         addWorkPlace' curItem = do
@@ -132,29 +133,44 @@ makeAppWindow = do
         saveText = do
             fileName <-
                 QFileDialog.getSaveFileName
-                    appWindow "Сохранить текстовое описание" "" ""
-            cablingVCount <- topLevelItemCount workArea
-            (Sum cablingHCount, Sum workPlaceCount) <-
-                fmap fold $ for [0 .. cablingVCount - 1] $ \i -> do
-                    cablingV <- topLevelItem workArea i
-                    cablingHCount <- childCount cablingV
-                    workPlaceCount <-
-                        fmap fold $ for [0 .. cablingHCount - 1] $ \j -> do
-                            cablingH <- child cablingV j
-                            Sum <$> childCount cablingH
-                    pure (Sum cablingHCount, workPlaceCount)
-            writeFile fileName $
-                unlines
-                    [ "Вертикальных систем: " ++ show cablingVCount
-                    , "Горизонтальных систем: " ++ show cablingHCount
-                    , "Рабочих мест: " ++ show workPlaceCount
-                    ]
+                    mainWindow "Сохранить текстовое описание" "" ""
+            unless (null fileName) $ do
+                cablingVCount <- topLevelItemCount workArea
+                (Sum cablingHCount, Sum workPlaceCount) <-
+                    fmap fold $ for [0 .. cablingVCount - 1] $ \i -> do
+                        cablingV <- topLevelItem workArea i
+                        cablingHCount <- childCount cablingV
+                        workPlaceCount <-
+                            fmap fold $ for [0 .. cablingHCount - 1] $ \j -> do
+                                cablingH <- child cablingV j
+                                Sum <$> childCount cablingH
+                        pure (Sum cablingHCount, workPlaceCount)
+                writeFile fileName $
+                    unlines
+                        [ "Вертикальных систем: " ++ show cablingVCount
+                        , "Горизонтальных систем: " ++ show cablingHCount
+                        , "Рабочих мест: " ++ show workPlaceCount
+                        ]
+
+    let saveImage :: IO ()
+        saveImage = do
+            fileName <-
+                QFileDialog.getSaveFileName
+                    mainWindow "Сохранить изображение" "" ""
+            unless (null fileName) $ do
+                shot <- QWidget.grab workArea
+                ok <- save shot fileName
+                unless ok $ void $
+                    QMessageBox.critical
+                        mainWindow
+                        "Не удалось сохранить файл"
+                        "Не удалось сохранить изображение. Возможно, вы неверно указали расширение. Попробуйте png."
 
     let addButton ::
             QBoxLayoutPtr layout => QIcon -> String -> layout -> IO () -> IO ()
         addButton icon text layout handler = do
             button <-
-                QPushButton.newWithIconAndTextAndParent icon text appWindow
+                QPushButton.newWithIconAndTextAndParent icon text mainWindow
             setIconSize button buttonIconSize
             addWidget layout button
             connect_ button clickedSignal $ const handler
@@ -182,9 +198,23 @@ makeAppWindow = do
 
         addStretch rightPanel
         addButton fileList "Сохранить\nтекстовое описание" rightPanel saveText
-        addButton fileImage "Сохранить\nизображение" rightPanel $ pure ()
+        addButton fileImage "Сохранить\nизображение" rightPanel saveImage
 
-    pure appWindow
+    -- test
+    QWidget.show mainWindow
+    addCablingV
+    addCablingH
+    addWorkPlace
+    addCablingV
+    addCablingV
+    addCablingH
+    addCablingH
+    addWorkPlace
+    addWorkPlace
+    saveImage
+    -- end test
+
+    pure mainWindow
 
 preIncrement :: Enum a => IORef a -> IO a
 preIncrement ref = do
