@@ -133,7 +133,10 @@ makeMainWindow = do
         saveText = do
             fileName <-
                 QFileDialog.getSaveFileName
-                    mainWindow "Сохранить текстовое описание" "" ""
+                    mainWindow
+                    "Сохранить текстовое описание"
+                    "cabling.txt"
+                    "Text files (*.txt)"
             unless (null fileName) $ do
                 cablingVCount <- topLevelItemCount workArea
                 (Sum cablingHCount, Sum workPlaceCount) <-
@@ -156,7 +159,10 @@ makeMainWindow = do
         saveImage = do
             fileName <-
                 QFileDialog.getSaveFileName
-                    mainWindow "Сохранить изображение" "" ""
+                    mainWindow
+                    "Сохранить изображение"
+                    "cabling.png"
+                    "Images (*.png)"
             unless (null fileName) $ do
                 shot <- QWidget.grab workArea
                 ok <- save shot fileName
@@ -209,6 +215,8 @@ makeMainWindow = do
     addCablingV
     addCablingH
     addCablingH
+    addWorkPlace
+    addWorkPlace
     addWorkPlace
     addWorkPlace
     saveImage
