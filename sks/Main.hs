@@ -42,7 +42,7 @@ data ItemType = CablingV | CablingH | WorkPlace
 main :: IO ()
 main = withApp $ \_ -> do
     mainWindow <- makeMainWindow
-    QWidget.show mainWindow
+    QWidget.showMaximized mainWindow
     exec
   where
     withApp = withScopedPtr $ getArgs >>= QApplication.new
@@ -205,22 +205,6 @@ makeMainWindow = do
         addStretch rightPanel
         addButton fileList "Сохранить\nтекстовое описание" rightPanel saveText
         addButton fileImage "Сохранить\nизображение" rightPanel saveImage
-
-    -- test
-    QWidget.show mainWindow
-    addCablingV
-    addCablingH
-    addWorkPlace
-    addCablingV
-    addCablingV
-    addCablingH
-    addCablingH
-    addWorkPlace
-    addWorkPlace
-    addWorkPlace
-    addWorkPlace
-    saveImage
-    -- end test
 
     pure mainWindow
 
