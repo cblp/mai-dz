@@ -44,23 +44,22 @@ main = withApp $ \_ -> do
     mainWindow <- makeMainWindow
     QWidget.showMaximized mainWindow
     exec
-  where
-    withApp = withScopedPtr $ getArgs >>= QApplication.new
+    where withApp = withScopedPtr $ getArgs >>= QApplication.new
 
 makeMainWindow :: IO QWidget
 makeMainWindow = do
-    connectionH <- QIcon.newWithFile "icons/connectionH.png"
-    connectionV <- QIcon.newWithFile "icons/connectionV.png"
-    fileImage   <- QIcon.newWithFile "icons/fileImage.png"
-    fileList    <- QIcon.newWithFile "icons/fileList.png"
-    laptop      <- QIcon.newWithFile "icons/laptop.png"
+    connectionH    <- QIcon.newWithFile "icons/connectionH.png"
+    connectionV    <- QIcon.newWithFile "icons/connectionV.png"
+    fileImage      <- QIcon.newWithFile "icons/fileImage.png"
+    fileList       <- QIcon.newWithFile "icons/fileList.png"
+    laptop         <- QIcon.newWithFile "icons/laptop.png"
 
     buttonIconSize <- QSize.new 32 32
 
-    counter <- newIORef (0 :: Natural)
+    counter        <- newIORef (0 :: Natural)
 
-    mainWindow <- QWidget.new
-    mainLayout <- QHBoxLayout.new
+    mainWindow     <- QWidget.new
+    mainLayout     <- QHBoxLayout.new
     setLayout mainWindow mainLayout
 
     workArea <- QTreeWidget.newWithParent mainWindow
@@ -68,143 +67,140 @@ makeMainWindow = do
 
     let addCablingV :: IO ()
         addCablingV = do
-            n <- preIncrement counter
-            item <-
-                QTreeWidgetItem.newWithParentTreeAndStringsAndType
-                    workArea
-                    ["Вертикальная подсистема " ++ show n]
-                    (fromEnum CablingV)
+            n    <- preIncrement counter
+            item <- QTreeWidgetItem.newWithParentTreeAndStringsAndType
+                workArea
+                ["Вертикальная подсистема " ++ show n]
+                (fromEnum CablingV)
             setIcon item 0 connectionV
             setCurrentItem workArea item
 
-    let addCablingH :: IO ()
+    let
+        addCablingH :: IO ()
         addCablingH = do
-            curItem <- currentItem workArea
-            curItemType <-
-                if curItem /= nullptr then
-                    Just . toEnum <$> getType curItem
-                else
-                    pure Nothing
+            curItem     <- currentItem workArea
+            curItemType <- if curItem /= nullptr
+                then Just . toEnum <$> getType curItem
+                else pure Nothing
             case curItemType of
                 Just CablingV -> addCablingH' curItem
                 Just CablingH -> addCablingH' =<< parent curItem
-                _ -> void $
-                    QMessageBox.critical
-                        mainWindow
-                        "Не выбрана вертикальная подсистема"
-                        "Выберите вертикальную подсистему, чтобы добавить к ней горизонтальную."
+                _             -> void $ QMessageBox.critical
+                    mainWindow
+                    "Не выбрана вертикальная подсистема"
+                    "Выберите вертикальную подсистему, чтобы добавить к ней горизонтальную."
         addCablingH' curItem = do
-            n <- preIncrement counter
-            item <-
-                QTreeWidgetItem.newWithParentItemAndStringsAndType
-                    curItem
-                    ["Горизонтальная подсистема " ++ show n]
-                    (fromEnum CablingH)
+            n    <- preIncrement counter
+            item <- QTreeWidgetItem.newWithParentItemAndStringsAndType
+                curItem
+                ["Горизонтальная подсистема " ++ show n]
+                (fromEnum CablingH)
             setIcon item 0 connectionH
             setCurrentItem workArea item
 
-    let addWorkPlace :: IO ()
+    let
+        addWorkPlace :: IO ()
         addWorkPlace = do
-            curItem <- currentItem workArea
-            curItemType <-
-                if curItem /= nullptr then
-                    Just . toEnum <$> getType curItem
-                else
-                    pure Nothing
+            curItem     <- currentItem workArea
+            curItemType <- if curItem /= nullptr
+                then Just . toEnum <$> getType curItem
+                else pure Nothing
             case curItemType of
                 Just CablingH  -> addWorkPlace' curItem
                 Just WorkPlace -> addWorkPlace' =<< parent curItem
-                _ -> void $
-                    QMessageBox.critical
-                        mainWindow
-                        "Не выбрана горизонтальная подсистема"
-                        "Выберите горизонтальную подсистему, чтобы добавить к ней рабочее место."
+                _              -> void $ QMessageBox.critical
+                    mainWindow
+                    "Не выбрана горизонтальная подсистема"
+                    "Выберите горизонтальную подсистему, чтобы добавить к ней рабочее место."
         addWorkPlace' curItem = do
-            n <- preIncrement counter
-            item <-
-                QTreeWidgetItem.newWithParentItemAndStringsAndType
-                    curItem
-                    ["Рабочее место " ++ show n]
-                    (fromEnum WorkPlace)
+            n    <- preIncrement counter
+            item <- QTreeWidgetItem.newWithParentItemAndStringsAndType
+                curItem
+                ["Рабочее место " ++ show n]
+                (fromEnum WorkPlace)
             setIcon item 0 laptop
             setCurrentItem workArea item
 
-    let saveText :: IO ()
+    let
+        saveText :: IO ()
         saveText = do
-            fileName <-
-                QFileDialog.getSaveFileName
-                    mainWindow
-                    "Сохранить текстовое описание"
-                    "cabling.txt"
-                    "Text files (*.txt)"
+            fileName <- QFileDialog.getSaveFileName
+                mainWindow
+                "Сохранить текстовое описание"
+                "cabling.txt"
+                "Text files (*.txt)"
             unless (null fileName) $ do
                 cablingVCount <- topLevelItemCount workArea
                 (Sum cablingHCount, Sum workPlaceCount) <-
                     fmap fold $ for [0 .. cablingVCount - 1] $ \i -> do
-                        cablingV <- topLevelItem workArea i
-                        cablingHCount <- childCount cablingV
+                        cablingV       <- topLevelItem workArea i
+                        cablingHCount  <- childCount cablingV
                         workPlaceCount <-
                             fmap fold $ for [0 .. cablingHCount - 1] $ \j -> do
                                 cablingH <- child cablingV j
                                 Sum <$> childCount cablingH
                         pure (Sum cablingHCount, workPlaceCount)
-                writeFile fileName $
-                    unlines
-                        [ "Вертикальных систем: " ++ show cablingVCount
-                        , "Горизонтальных систем: " ++ show cablingHCount
-                        , "Рабочих мест: " ++ show workPlaceCount
-                        ]
+                writeFile fileName $ unlines
+                    [ "Вертикальных систем: " ++ show cablingVCount
+                    , "Горизонтальных систем: " ++ show cablingHCount
+                    , "Рабочих мест: " ++ show workPlaceCount
+                    ]
 
-    let saveImage :: IO ()
+    let
+        saveImage :: IO ()
         saveImage = do
-            fileName <-
-                QFileDialog.getSaveFileName
-                    mainWindow
-                    "Сохранить изображение"
-                    "cabling.png"
-                    "Images (*.png)"
+            fileName <- QFileDialog.getSaveFileName mainWindow
+                                                    "Сохранить изображение"
+                                                    "cabling.png"
+                                                    "Images (*.png)"
             unless (null fileName) $ do
                 shot <- grab workArea
-                ok <- save shot fileName
-                unless ok $ void $
-                    QMessageBox.critical
-                        mainWindow
-                        "Не удалось сохранить файл"
-                        "Не удалось сохранить изображение. Возможно, вы неверно указали расширение. Попробуйте png."
+                ok   <- save shot fileName
+                unless ok $ void $ QMessageBox.critical
+                    mainWindow
+                    "Не удалось сохранить файл"
+                    "Не удалось сохранить изображение. Возможно, вы неверно указали расширение. Попробуйте png."
 
-    let addButton ::
-            QBoxLayoutPtr layout => QIcon -> String -> layout -> IO () -> IO ()
+    let
+        addButton
+            :: QBoxLayoutPtr layout
+            => QIcon
+            -> String
+            -> layout
+            -> IO ()
+            -> IO ()
         addButton icon text layout handler = do
-            button <-
-                QPushButton.newWithIconAndTextAndParent icon text mainWindow
+            button <- QPushButton.newWithIconAndTextAndParent icon
+                                                              text
+                                                              mainWindow
             setIconSize button buttonIconSize
-            addWidget layout button
-            connect_ button clickedSignal $ const handler
+            addWidget   layout button
+            connect_    button clickedSignal $ const handler
 
-    do  leftPanel <- QVBoxLayout.new
+    do
+        leftPanel <- QVBoxLayout.new
         addItem mainLayout leftPanel
 
-        addButton
-            connectionV
-            "Добавить\nвертикальную подсистему"
-            leftPanel
-            addCablingV
-        addButton
-            connectionH
-            "Добавить\nгоризонтальную подсистему"
-            leftPanel
-            addCablingH
+        addButton connectionV
+                  "Добавить\nвертикальную подсистему"
+                  leftPanel
+                  addCablingV
+        addButton connectionH
+                  "Добавить\nгоризонтальную подсистему"
+                  leftPanel
+                  addCablingH
         addButton laptop "Добавить\nрабочее место" leftPanel addWorkPlace
         addStretch leftPanel
 
     addWidget mainLayout workArea
 
-    do  rightPanel <- QVBoxLayout.new
+    do
+        rightPanel <- QVBoxLayout.new
         addItem mainLayout rightPanel
 
         addStretch rightPanel
-        addButton fileList "Сохранить\nтекстовое описание" rightPanel saveText
-        addButton fileImage "Сохранить\nизображение" rightPanel saveImage
+        addButton fileList  "Сохранить\nтекстовое описание" rightPanel saveText
+        addButton fileImage "Сохранить\nизображение"        rightPanel saveImage
 
     pure mainWindow
 
