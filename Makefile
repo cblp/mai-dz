@@ -24,7 +24,7 @@ build/instawdb.sql: build/AdventureWorks-oltp-install-script.zip
 
 db.sqlite: build/instawdb.sql loadCsv.sql
 	rm -f $@
-	cat loadCsv.sql | sqlite3 $@
+	sqlite3 $@ < loadCsv.sql
 
 $(QTAH_LIB):
 	stack build --only-dependencies

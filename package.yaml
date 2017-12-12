@@ -1,16 +1,37 @@
 name: mai-dz
 
+# internal-libraries:
+#   aw-db:
+library:
+    dependencies:
+      - Decimal
+      - monad-logger
+      - mtl
+      - persistent
+      - persistent-sqlite
+      - persistent-template
+      - resourcet
+      - text
+    source-dirs: aw-db
+
 executables:
   aw:
+    dependencies:
+      # global
+        - hoppy-runtime
+        - qtah # qtah-qt5 for the release
+      # package
+        - mai-dz
     main: Main
     source-dirs: aw
   sks:
+    dependencies:
+      - hoppy-runtime
+      - qtah # qtah-qt5 for the release
     main: Main
     source-dirs: sks
 
 dependencies:
   - base
-  - hoppy-runtime
-  - qtah # qtah-qt5 for the release
 
 ghc-options: -Werror -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
