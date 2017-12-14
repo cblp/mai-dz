@@ -4,6 +4,7 @@
 import           Prelude hiding (product)
 
 import           Control.Monad (void)
+import           Data.Char (toLower)
 import           Data.Foldable (for_)
 import           Data.List (isInfixOf)
 import           Data.Proxy (Proxy (Proxy))
@@ -47,6 +48,7 @@ makeMainWindow = do
         toolBar <- addToolBarWithTitle window ""
         search  <- QLineEdit.new
         setPlaceholderText search "Фильтр..."
+        setClearButtonEnabled search True
         connect_ search textChangedSignal $ updateProductViewWithSearch products
         void $ addWidget toolBar search
 
@@ -86,5 +88,7 @@ updateProductViewWithSearch productView searchTerms = do
                 columns <- columnCount item
                 matched <- for [0 .. columns - 1] $ \j -> do
                     cellText <- QTreeWidgetItem.text item j
-                    pure $ searchTerms `isInfixOf` cellText
+                    pure
+                        $           map toLower searchTerms
+                        `isInfixOf` map toLower cellText
                 setHidden item $ not $ or matched
