@@ -81,14 +81,13 @@ updateProductViewWithSearch :: QTreeWidget -> String -> IO ()
 updateProductViewWithSearch productView searchTerms = do
     products <- topLevelItemCount productView
     for_ [0 .. products - 1] $ \i -> do
-        item <- topLevelItem productView i
-        case searchTerms of
-            "" -> setHidden item False
+        item    <- topLevelItem productView i
+        matched <- case searchTerms of
+            "" -> pure True
             _  -> do
                 columns <- columnCount item
-                matched <- for [0 .. columns - 1] $ \j -> do
+                fmap or . for [0 .. columns - 1] $ \j -> do
                     cellText <- QTreeWidgetItem.text item j
-                    pure
-                        $           map toLower searchTerms
-                        `isInfixOf` map toLower cellText
-                setHidden item $ not $ or matched
+                    pure $ match cellText
+        setHidden item $ not matched
+    where match txt = map toLower searchTerms `isInfixOf` map toLower txt
