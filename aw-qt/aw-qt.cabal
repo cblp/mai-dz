@@ -1,0 +1,24 @@
+name:           aw-qt
+version:        0.0.0
+build-type:     Simple
+cabal-version:  >= 1.21
+
+library
+  build-depends:
+      base
+    , qtah
+  other-modules:
+      Paths_aw_qt
+  reexported-modules:
+      Graphics.UI.Qtah.Core.QCoreApplication as QCoreApplication
+    , Graphics.UI.Qtah.Widgets.QApplication as QApplication
+    , Graphics.UI.Qtah.Widgets.QLabel as QLabel
+    , Graphics.UI.Qtah.Widgets.QLineEdit as QLineEdit
+    , Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
+    , Graphics.UI.Qtah.Widgets.QTabWidget as QTabWidget
+    , Graphics.UI.Qtah.Widgets.QToolBar as QToolBar
+    , Graphics.UI.Qtah.Widgets.QTreeView as QTreeView
+    , Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
+    , Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
+    , Graphics.UI.Qtah.Widgets.QWidget as QWidget
+  default-language: Haskell2010

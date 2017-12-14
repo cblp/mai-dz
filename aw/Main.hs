@@ -9,31 +9,26 @@ import           Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as Text
 import           Data.Traversable (for)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
-import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
-import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
-import qualified Graphics.UI.Qtah.Widgets.QLabel as QLabel
-import qualified Graphics.UI.Qtah.Widgets.QLineEdit as QLineEdit
-import           Graphics.UI.Qtah.Widgets.QMainWindow (addToolBarWithTitle,
-                                                       setCentralWidget,
-                                                       setUnifiedTitleAndToolBarOnMac)
-import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
-import           Graphics.UI.Qtah.Widgets.QTabWidget (addTab)
-import qualified Graphics.UI.Qtah.Widgets.QTabWidget as QTabWidget
-import           Graphics.UI.Qtah.Widgets.QToolBar (addWidget)
-import           Graphics.UI.Qtah.Widgets.QTreeView (resizeColumnToContents)
-import           Graphics.UI.Qtah.Widgets.QTreeWidget (setHeaderLabels)
-import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
-import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
-import           Graphics.UI.Qtah.Widgets.QWidget (QWidget)
-import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs)
+
+import           QApplication
+import           QCoreApplication
+import           QLabel
+import           QLineEdit
+import           QMainWindow
+import           QTabWidget
+import           QToolBar
+import           QTreeView
+import           QTreeWidget
+import           QTreeWidgetItem
+import           QWidget (QWidget, cast, showMaximized)
 
 import           DB
 
 main :: IO ()
 main = withApp $ \_ -> do
     mainWindow <- makeMainWindow
-    QWidget.showMaximized mainWindow
+    showMaximized mainWindow
     exec
     where withApp = withScopedPtr $ getArgs >>= QApplication.new
 

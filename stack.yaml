@@ -2,6 +2,7 @@ resolver: lts-9.17
 
 packages:
   - .
+  - aw-qt
   - extra-dep: true
     location: ../qtah/qtah
   - extra-dep: true

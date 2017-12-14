@@ -19,8 +19,9 @@ executables:
     dependencies:
       # global
         - hoppy-runtime
-        - qtah # qtah-qt5 for the release
         - text
+      # project
+        - aw-qt
       # package
         - mai-dz
     main: Main

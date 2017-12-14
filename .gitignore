@@ -1,5 +1,9 @@
+.cabal-sandbox/
+.hpc
+.hsenv
+.HTF/
+.stack-work/
 *.aux
-*.cabal
 *.chi
 *.chs.h
 *.dyn_hi
@@ -9,11 +13,6 @@
 *.hp
 *.o
 *.prof
-.HTF/
-.cabal-sandbox/
-.hpc
-.hsenv
-.stack-work/
 /bin
 /build/
 /db.sqlite
@@ -23,3 +22,4 @@ cabal.project.local
 cabal.sandbox.config
 dist
 dist-*
+mai-dz.cabal
