@@ -12,6 +12,7 @@ import           Data.Traversable (for)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           System.Environment (getArgs)
 
+import           QAbstractItemView
 import           QApplication
 import           QCoreApplication
 import           QLineEdit
@@ -59,6 +60,7 @@ makeMainWindow = do
 makeProductView :: IO QTreeWidget
 makeProductView = do
     productView <- QTreeWidget.new
+    setAlternatingRowColors productView True
 
     setHeaderLabels productView (map (Text.unpack . unDBName . fieldDB) fields)
 
