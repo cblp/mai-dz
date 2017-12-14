@@ -18,11 +18,11 @@ import           Database.Persist.Sql (PersistFieldSql, SqlType (SqlReal),
 
 instance Integral i => PersistField (DecimalRaw i) where
     fromPersistValue = \case
-        PersistInt64 i  -> pure $ fromIntegral i
+        PersistInt64  i -> pure $ fromIntegral i
         PersistDouble d -> pure $ realFracToDecimal 10 d
         v               ->
             Left $ "cannot convert " <> Text.pack (show v) <> " to DecimalRaw"
-    toPersistValue = undefined
+    toPersistValue = PersistDouble . realToFrac
 
 instance Integral i => PersistFieldSql (DecimalRaw i) where
     sqlType _ = SqlReal

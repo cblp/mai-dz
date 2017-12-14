@@ -9,14 +9,16 @@
 module DB
     (
     -- * DB schema
-    Product,
+    Product (..),
     ProductId,
     -- * DB tools
     DB,
     -- * Persist re-exports
-    Entity,
+    Entity (..),
+    PersistValue (..),
     runDB,
     selectList,
+    toPersistValue,
     ) where
 
 import           Control.Monad.Logger (NoLoggingT)
@@ -24,7 +26,8 @@ import           Control.Monad.Reader (ReaderT)
 import           Control.Monad.Trans.Resource (ResourceT)
 import           Data.Decimal (Decimal)
 import           Data.Text (Text)
-import           Database.Persist (Entity, selectList)
+import           Database.Persist (Entity (..), PersistValue (..), selectList,
+                                   toPersistValue)
 import           Database.Persist.Sql (SqlBackend)
 import           Database.Persist.Sqlite (runSqlite)
 import           Database.Persist.TH (mkPersist, persistUpperCase, share,
