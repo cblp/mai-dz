@@ -5,6 +5,7 @@ import           Prelude hiding (product)
 
 import           Control.Monad (void)
 import           Data.Foldable (for_)
+import           Data.List (isInfixOf)
 import           Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as Text
 import           Data.Traversable (for)
@@ -13,7 +14,6 @@ import           System.Environment (getArgs)
 
 import           QApplication
 import           QCoreApplication
-import           QLabel
 import           QLineEdit
 import           QMainWindow
 import           QTabWidget
@@ -22,6 +22,7 @@ import           QTreeView
 import           QTreeWidget
 import           QTreeWidgetItem
 import           QWidget (QWidget, cast, showMaximized)
+import           Signal
 
 import           DB
 
@@ -37,21 +38,26 @@ makeMainWindow = do
     window <- QMainWindow.new
     setUnifiedTitleAndToolBarOnMac window True
 
-    toolBar <- addToolBarWithTitle window ""
-    void $ addWidget toolBar =<< QLabel.newWithText "Поиск"
-    void $ addWidget toolBar =<< QLineEdit.new
-
     tabs     <- QTabWidget.new
     products <- makeProductView
     void $ addTab tabs products "Products"
     setCentralWidget window tabs
 
+    do
+        toolBar <- addToolBarWithTitle window ""
+        search  <- QLineEdit.new
+        setPlaceholderText search "Фильтр..."
+        connect_ search textChangedSignal $ updateProductViewWithSearch products
+        void $ addWidget toolBar search
+
     pure $ QWidget.cast window
 
-makeProductView :: IO QWidget
+makeProductView :: IO QTreeWidget
 makeProductView = do
     productView <- QTreeWidget.new
+
     setHeaderLabels productView $ map (Text.unpack . unDBName . fieldDB) fields
+
     products <- runDB $ selectList [] []
     for_ products $ \(Entity _productId product) -> do
         row <- case toPersistValue (product :: Product) of
@@ -65,5 +71,20 @@ makeProductView = do
                 Right r -> pure $ Text.unpack r
         QTreeWidgetItem.newWithParentTreeAndStrings productView labels
     for_ [0 .. length fields - 1] $ resizeColumnToContents productView
-    pure $ QWidget.cast productView
+
+    pure productView
     where fields = entityFields $ entityDef (Proxy :: Proxy Product)
+
+updateProductViewWithSearch :: QTreeWidget -> String -> IO ()
+updateProductViewWithSearch productView searchTerms = do
+    products <- topLevelItemCount productView
+    for_ [0 .. products - 1] $ \i -> do
+        item <- topLevelItem productView i
+        case searchTerms of
+            "" -> setHidden item False
+            _  -> do
+                columns <- columnCount item
+                matched <- for [0 .. columns - 1] $ \j -> do
+                    cellText <- QTreeWidgetItem.text item j
+                    pure $ searchTerms `isInfixOf` cellText
+                setHidden item $ not $ or matched

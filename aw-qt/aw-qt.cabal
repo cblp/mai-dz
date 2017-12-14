@@ -11,6 +11,7 @@ library
       Paths_aw_qt
   reexported-modules:
       Graphics.UI.Qtah.Core.QCoreApplication as QCoreApplication
+    , Graphics.UI.Qtah.Signal as Signal
     , Graphics.UI.Qtah.Widgets.QApplication as QApplication
     , Graphics.UI.Qtah.Widgets.QLabel as QLabel
     , Graphics.UI.Qtah.Widgets.QLineEdit as QLineEdit
