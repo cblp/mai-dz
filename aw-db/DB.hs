@@ -14,7 +14,11 @@ module DB
     -- * DB tools
     DB,
     -- * Persist re-exports
+    DBName (..),
     Entity (..),
+    EntityDef (..),
+    FieldDef (..),
+    PersistEntity (..),
     PersistValue (..),
     runDB,
     selectList,
@@ -26,7 +30,9 @@ import           Control.Monad.Reader (ReaderT)
 import           Control.Monad.Trans.Resource (ResourceT)
 import           Data.Decimal (Decimal)
 import           Data.Text (Text)
-import           Database.Persist (Entity (..), PersistValue (..), selectList,
+import           Database.Persist (DBName (..), Entity (..), EntityDef (..),
+                                   FieldDef (..), PersistEntity (..),
+                                   PersistValue (..), selectList,
                                    toPersistValue)
 import           Database.Persist.Sql (SqlBackend)
 import           Database.Persist.Sqlite (runSqlite)

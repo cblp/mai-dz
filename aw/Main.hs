@@ -1,17 +1,23 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 import           Prelude hiding (product)
 
+import qualified Data.Text as Text
 import           Data.Foldable (for_)
+import           Data.Proxy (Proxy (Proxy))
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
-import           Graphics.UI.Qtah.Widgets.QTreeWidget (QTreeWidget)
+import           Graphics.UI.Qtah.Widgets.QTreeWidget (QTreeWidget,
+                                                       setHeaderLabels)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs)
 
-import           DB (Entity (..), PersistValue (PersistList, PersistMap),
-                     Product (..), runDB, selectList, toPersistValue)
+import           DB (DBName (DBName), Entity (Entity), FieldDef (FieldDef),
+                     PersistValue (PersistList, PersistMap), Product, entityDef,
+                     entityFields, fieldDB, runDB, selectList, toPersistValue)
 
 main :: IO ()
 main = withApp $ \_ -> do
@@ -24,7 +30,14 @@ makeProductView :: IO QTreeWidget
 makeProductView = do
     productView <- QTreeWidget.new
 
-    products    <- runDB $ selectList [] []
+    setHeaderLabels
+        productView
+        [ Text.unpack name
+        | FieldDef { fieldDB = DBName name } <- entityFields
+            $ entityDef (Proxy :: Proxy Product)
+        ]
+
+    products <- runDB $ selectList [] []
     for_ products $ \(Entity _productId product) -> do
         row <- case toPersistValue (product :: Product) of
             PersistList row -> pure row

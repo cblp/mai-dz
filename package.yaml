@@ -20,6 +20,7 @@ executables:
       # global
         - hoppy-runtime
         - qtah # qtah-qt5 for the release
+        - text
       # package
         - mai-dz
     main: Main
