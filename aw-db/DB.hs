@@ -20,6 +20,7 @@ module DB
     FieldDef (..),
     PersistEntity (..),
     PersistValue (..),
+    fromPersistValueText,
     runDB,
     selectList,
     toPersistValue,
@@ -32,8 +33,8 @@ import           Data.Decimal (Decimal)
 import           Data.Text (Text)
 import           Database.Persist (DBName (..), Entity (..), EntityDef (..),
                                    FieldDef (..), PersistEntity (..),
-                                   PersistValue (..), selectList,
-                                   toPersistValue)
+                                   PersistField (..), PersistValue (..),
+                                   fromPersistValueText, selectList)
 import           Database.Persist.Sql (SqlBackend)
 import           Database.Persist.Sqlite (runSqlite)
 import           Database.Persist.TH (mkPersist, persistUpperCase, share,

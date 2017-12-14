@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 import           Prelude hiding (product)
@@ -5,6 +6,7 @@ import           Prelude hiding (product)
 import           Data.Foldable (for_)
 import           Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as Text
+import           Data.Traversable (for)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
@@ -15,9 +17,11 @@ import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs)
 
-import           DB (Entity (Entity), PersistValue (PersistList, PersistMap),
-                     Product, entityDef, entityFields, fieldDB, runDB,
-                     selectList, toPersistValue, unDBName)
+import           DB (Entity (Entity),
+                     PersistValue (PersistList, PersistMap, PersistNull),
+                     Product, entityDef, entityFields, fieldDB,
+                     fromPersistValueText, runDB, selectList, toPersistValue,
+                     unDBName)
 
 main :: IO ()
 main = withApp $ \_ -> do
@@ -41,6 +45,11 @@ makeProductView = do
             PersistList row -> pure row
             PersistMap  row -> pure $ map snd row
             value           -> error $ show value
-        QTreeWidgetItem.newWithParentTreeAndStrings productView (map show row)
+        labels <- for row $ \case
+            PersistNull -> pure ""
+            item        -> case fromPersistValueText item of
+                Left  e -> error $ Text.unpack e
+                Right r -> pure $ Text.unpack r
+        QTreeWidgetItem.newWithParentTreeAndStrings productView labels
 
     pure productView
