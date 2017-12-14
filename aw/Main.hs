@@ -11,8 +11,15 @@ import           Data.Traversable (for)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
+import qualified Graphics.UI.Qtah.Widgets.QLabel as QLabel
+import qualified Graphics.UI.Qtah.Widgets.QLineEdit as QLineEdit
+import           Graphics.UI.Qtah.Widgets.QMainWindow (addToolBarWithTitle,
+                                                       setCentralWidget,
+                                                       setUnifiedTitleAndToolBarOnMac)
+import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
 import           Graphics.UI.Qtah.Widgets.QTabWidget (addTab)
 import qualified Graphics.UI.Qtah.Widgets.QTabWidget as QTabWidget
+import           Graphics.UI.Qtah.Widgets.QToolBar (addWidget)
 import           Graphics.UI.Qtah.Widgets.QTreeView (resizeColumnToContents)
 import           Graphics.UI.Qtah.Widgets.QTreeWidget (setHeaderLabels)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
@@ -21,11 +28,7 @@ import           Graphics.UI.Qtah.Widgets.QWidget (QWidget)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs)
 
-import           DB (Entity (Entity),
-                     PersistValue (PersistList, PersistMap, PersistNull),
-                     Product, entityDef, entityFields, fieldDB,
-                     fromPersistValueText, runDB, selectList, toPersistValue,
-                     unDBName)
+import           DB
 
 main :: IO ()
 main = withApp $ \_ -> do
@@ -36,15 +39,23 @@ main = withApp $ \_ -> do
 
 makeMainWindow :: IO QWidget
 makeMainWindow = do
-    tabs <- QTabWidget.new
-    let tabs' = QWidget.cast tabs
-    productView <- makeProductView tabs'
-    void $ addTab tabs productView "Products"
-    pure tabs'
+    window <- QMainWindow.new
+    setUnifiedTitleAndToolBarOnMac window True
 
-makeProductView :: QWidget -> IO QWidget
-makeProductView parent = do
-    productView <- QTreeWidget.newWithParent parent
+    toolBar <- addToolBarWithTitle window ""
+    void $ addWidget toolBar =<< QLabel.newWithText "Поиск"
+    void $ addWidget toolBar =<< QLineEdit.new
+
+    tabs     <- QTabWidget.new
+    products <- makeProductView
+    void $ addTab tabs products "Products"
+    setCentralWidget window tabs
+
+    pure $ QWidget.cast window
+
+makeProductView :: IO QWidget
+makeProductView = do
+    productView <- QTreeWidget.new
     setHeaderLabels productView $ map (Text.unpack . unDBName . fieldDB) fields
     products <- runDB $ selectList [] []
     for_ products $ \(Entity _productId product) -> do
