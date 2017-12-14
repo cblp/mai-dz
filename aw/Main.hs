@@ -13,6 +13,7 @@ import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
 import           Graphics.UI.Qtah.Widgets.QTabWidget (addTab)
 import qualified Graphics.UI.Qtah.Widgets.QTabWidget as QTabWidget
+import           Graphics.UI.Qtah.Widgets.QTreeView (resizeColumnToContents)
 import           Graphics.UI.Qtah.Widgets.QTreeWidget (setHeaderLabels)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
@@ -44,12 +45,7 @@ makeMainWindow = do
 makeProductView :: QWidget -> IO QWidget
 makeProductView parent = do
     productView <- QTreeWidget.newWithParent parent
-
-    setHeaderLabels productView
-        $ map (Text.unpack . unDBName . fieldDB)
-        $ entityFields
-        $ entityDef (Proxy :: Proxy Product)
-
+    setHeaderLabels productView $ map (Text.unpack . unDBName . fieldDB) fields
     products <- runDB $ selectList [] []
     for_ products $ \(Entity _productId product) -> do
         row <- case toPersistValue (product :: Product) of
@@ -62,5 +58,6 @@ makeProductView parent = do
                 Left  e -> error $ Text.unpack e
                 Right r -> pure $ Text.unpack r
         QTreeWidgetItem.newWithParentTreeAndStrings productView labels
-
+    for_ [0 .. length fields - 1] $ resizeColumnToContents productView
     pure $ QWidget.cast productView
+    where fields = entityFields $ entityDef (Proxy :: Proxy Product)
