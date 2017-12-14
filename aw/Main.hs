@@ -3,6 +3,7 @@
 
 import           Prelude hiding (product)
 
+import           Control.Monad (void)
 import           Data.Foldable (for_)
 import           Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as Text
@@ -10,10 +11,12 @@ import           Data.Traversable (for)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
-import           Graphics.UI.Qtah.Widgets.QTreeWidget (QTreeWidget,
-                                                       setHeaderLabels)
+import           Graphics.UI.Qtah.Widgets.QTabWidget (addTab)
+import qualified Graphics.UI.Qtah.Widgets.QTabWidget as QTabWidget
+import           Graphics.UI.Qtah.Widgets.QTreeWidget (setHeaderLabels)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
+import           Graphics.UI.Qtah.Widgets.QWidget (QWidget)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs)
 
@@ -25,14 +28,22 @@ import           DB (Entity (Entity),
 
 main :: IO ()
 main = withApp $ \_ -> do
-    mainWindow <- makeProductView
+    mainWindow <- makeMainWindow
     QWidget.showMaximized mainWindow
     exec
     where withApp = withScopedPtr $ getArgs >>= QApplication.new
 
-makeProductView :: IO QTreeWidget
-makeProductView = do
-    productView <- QTreeWidget.new
+makeMainWindow :: IO QWidget
+makeMainWindow = do
+    tabs <- QTabWidget.new
+    let tabs' = QWidget.cast tabs
+    productView <- makeProductView tabs'
+    void $ addTab tabs productView "Products"
+    pure tabs'
+
+makeProductView :: QWidget -> IO QWidget
+makeProductView parent = do
+    productView <- QTreeWidget.newWithParent parent
 
     setHeaderLabels productView
         $ map (Text.unpack . unDBName . fieldDB)
@@ -52,4 +63,4 @@ makeProductView = do
                 Right r -> pure $ Text.unpack r
         QTreeWidgetItem.newWithParentTreeAndStrings productView labels
 
-    pure productView
+    pure $ QWidget.cast productView
