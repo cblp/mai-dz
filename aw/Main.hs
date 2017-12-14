@@ -57,6 +57,7 @@ makeMainWindow = do
 makeProductView :: IO QTreeWidget
 makeProductView = do
     productView <- QTreeWidget.new
+    setSortingEnabled productView True
 
     setHeaderLabels productView $ map (Text.unpack . unDBName . fieldDB) fields
 
