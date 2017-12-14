@@ -57,7 +57,6 @@ makeMainWindow = do
 makeProductView :: IO QTreeWidget
 makeProductView = do
     productView <- QTreeWidget.new
-    setSortingEnabled productView True
 
     setHeaderLabels productView $ map (Text.unpack . unDBName . fieldDB) fields
 
@@ -74,6 +73,10 @@ makeProductView = do
                 Right r -> pure $ Text.unpack r
         QTreeWidgetItem.newWithParentTreeAndStrings productView labels
     for_ [0 .. length fields - 1] $ resizeColumnToContents productView
+
+    -- In order to avoid performance issues, it is recommended that sorting is
+    -- enabled after inserting the items into the tree.
+    setSortingEnabled productView True
 
     pure productView
     where fields = entityFields $ entityDef (Proxy :: Proxy Product)
