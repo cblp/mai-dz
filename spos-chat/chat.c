@@ -7,7 +7,7 @@
 
 + Процесс-родитель ожидает ввода пользователя и после завершения ввода отправляет полученную строку в вместе с именем пользователя в первый именованный канал.
 
-- Процесс-потомок считывает из второго именованного канала отправленные ранее строки и выводит на экран строку в следующем формате:
++ Процесс-потомок считывает из второго именованного канала отправленные ранее строки и выводит на экран строку в следующем формате:
     – <чч:мм:сс> Имя: сообщение.
     – Например: <16:27:32> Иван: Всем привет!
 
@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #define USER_NAME_SIZE_MAX 1024
@@ -31,6 +32,14 @@
     (USER_NAME_SIZE_MAX + 2 + USER_MESSAGE_SIZE_MAX)
 
 void get_line(char * buffer, size_t buffer_size, FILE * stream);
+
+const char * get_timestamp() {
+    static char buf[] = "hh:mm:ss";
+    time_t t = time(NULL);
+    struct tm * tm = localtime(&t);
+    sprintf(buf, "%02u:%02u:%02u", tm->tm_hour, tm->tm_min, tm->tm_sec);
+    return buf;
+}
 
 void parent_main(const char * conn_filename) {
     FILE * conn = fopen(conn_filename, "w");
@@ -41,7 +50,7 @@ void parent_main(const char * conn_filename) {
     while (conn && !feof(conn) && !feof(stdin)) {
         char message[USER_MESSAGE_SIZE_MAX];
         get_line(message, sizeof(message), stdin);
-        printf("\r<чч:мм:сс> %s: %s\n> ", user_name, message);
+        printf("\r<%s> %s: %s\n> ", get_timestamp(), user_name, message);
         fprintf(conn, "%s: %s\n", user_name, message);
         fflush(conn);
     }
@@ -52,7 +61,7 @@ void child_main(const char * conn_filename) {
     while (conn && !feof(conn) && !feof(stdout)) {
         char message[TRANSPORT_MESSAGE_SIZE_MAX];
         get_line(message, sizeof(message), conn);
-        printf("\r<чч:мм:сс> %s\n> ", message);
+        printf("\r<%s> %s\n> ", get_timestamp(), message);
         fflush(stdout);
     }
 }
