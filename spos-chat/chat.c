@@ -16,9 +16,10 @@
 
 + Канал создать самостоятельно в директории /tmp в следующем формате: /tmp/фамилия_pipe.
 
-- Процесс должен обрабатывать сигналы SIGCHLD, SIGUSR1, SIGUSR2 и SIGTERM, при получении которых выводить соответствующие сообщения
++ Процесс должен обрабатывать сигналы SIGCHLD, SIGUSR1, SIGUSR2 и SIGTERM, при получении которых выводить соответствующие сообщения
 */
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +33,25 @@
     (USER_NAME_SIZE_MAX + 2 + USER_MESSAGE_SIZE_MAX)
 
 void get_line(char * buffer, size_t buffer_size, FILE * stream);
+
+void signal_handler(int sig) {
+    const char * description = "?";
+    switch (sig) {
+        case SIGCHLD:
+            description = "SIGCHLD";
+            break;
+        case SIGUSR1:
+            description = "SIGUSR1";
+            break;
+        case SIGUSR2:
+            description = "SIGUSR2";
+            break;
+        case SIGTERM:
+            description = "SIGTERM";
+            break;
+    }
+    fprintf(stderr, "caught signal %u (%s)\n", sig, description);
+}
 
 const char * get_timestamp() {
     static char buf[] = "hh:mm:ss";
@@ -67,6 +87,11 @@ void child_main(const char * conn_filename) {
 }
 
 int main(int argc, char const * argv[]) {
+    signal(SIGCHLD, signal_handler);
+    signal(SIGUSR1, signal_handler);
+    signal(SIGUSR2, signal_handler);
+    signal(SIGTERM, signal_handler);
+
     if (argc < 3) {
         fprintf(stderr, "Usage: %s PIPE1 PIPE2\n", argv[0]);
         return 1;
