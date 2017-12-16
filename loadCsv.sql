@@ -1,3 +1,6 @@
+.mode csv
+.separator "\t"
+
 CREATE TABLE [Product](
     [ProductID] [int] IDENTITY (1, 1) NOT NULL,
     [Name] [Name] NOT NULL,
@@ -36,8 +39,6 @@ CREATE TABLE [Product](
     CONSTRAINT [CK_Product_SellEndDate] CHECK (([SellEndDate] >= [SellStartDate]) OR ([SellEndDate] == NULL))
 );
 
-.mode csv
-.separator "\t"
 .import build/Product.csv Product
 
 UPDATE [Product] set [Class]                 = NULL WHERE [Class]                 = "";
@@ -52,3 +53,19 @@ UPDATE [Product] set [SizeUnitMeasureCode]   = NULL WHERE [SizeUnitMeasureCode] 
 UPDATE [Product] set [Style]                 = NULL WHERE [Style]                 = "";
 UPDATE [Product] set [Weight]                = NULL WHERE [Weight]                = "";
 UPDATE [Product] set [WeightUnitMeasureCode] = NULL WHERE [WeightUnitMeasureCode] = "";
+
+CREATE TABLE [WorkOrder](
+    [WorkOrderID] [int] IDENTITY (1, 1) NOT NULL,
+    [ProductID] [int] NOT NULL,
+    [OrderQty] [int] NOT NULL,
+    [StockedQty], -- AS ISNULL([OrderQty] - [ScrappedQty], 0),
+    [ScrappedQty] [smallint] NOT NULL,
+    [StartDate] [datetime] NOT NULL,
+    [EndDate] [datetime] NULL,
+    [DueDate] [datetime] NOT NULL,
+    [ScrapReasonID] [smallint] NULL,
+    [ModifiedDate] [datetime] NOT NULL CONSTRAINT [DF_WorkOrder_ModifiedDate] DEFAULT (GETDATE()),
+    CONSTRAINT [CK_WorkOrder_OrderQty] CHECK ([OrderQty] > 0),
+    CONSTRAINT [CK_WorkOrder_ScrappedQty] CHECK ([ScrappedQty] >= 0),
+    CONSTRAINT [CK_WorkOrder_EndDate] CHECK (([EndDate] >= [StartDate]) OR ([EndDate] IS NULL))
+);
