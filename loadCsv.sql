@@ -54,6 +54,10 @@ UPDATE [Product] set [Style]                 = NULL WHERE [Style]               
 UPDATE [Product] set [Weight]                = NULL WHERE [Weight]                = "";
 UPDATE [Product] set [WeightUnitMeasureCode] = NULL WHERE [WeightUnitMeasureCode] = "";
 
+CREATE UNIQUE INDEX [AK_Product_ProductNumber] ON [Product]([ProductNumber]);
+CREATE UNIQUE INDEX [AK_Product_Name] ON [Product]([Name]);
+CREATE UNIQUE INDEX [AK_Product_rowguid] ON [Product]([rowguid]);
+
 CREATE TABLE [WorkOrder](
     [WorkOrderID] [int] IDENTITY (1, 1) NOT NULL,
     [ProductID] [int] NOT NULL,
@@ -73,3 +77,6 @@ CREATE TABLE [WorkOrder](
 .import build/WorkOrder.csv WorkOrder
 
 UPDATE [WorkOrder] set [ScrapReasonID] = NULL WHERE [ScrapReasonID] = "";
+
+CREATE INDEX [IX_WorkOrder_ScrapReasonID] ON [WorkOrder]([ScrapReasonID]);
+CREATE INDEX [IX_WorkOrder_ProductID] ON [WorkOrder]([ProductID]);

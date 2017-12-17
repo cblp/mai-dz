@@ -63,10 +63,11 @@ type UniqueIdentifier = Text
 share
     [mkPersist sqlSettings]
     [persistUpperCase|
+        -- https://technet.microsoft.com/ru-ru/library/ms124719(v=sql.100).aspx
         Product
-            Id                                  sql=ProductID
-            name                  Name
-            productNumber         Text
+            Id                                  sql=ProductID   -- PRIMARY
+            name                  Name                          -- UNIQUE
+            productNumber         Text                          -- UNIQUE
             makeFlag              Bool
             finishedGoodsFlag     Bool
             color                 Text Maybe
@@ -87,13 +88,14 @@ share
             sellStartDate         DateTime
             sellEndDate           DateTime Maybe
             discontinuedDate      DateTime Maybe
-            rowguid               UniqueIdentifier
+            rowguid               UniqueIdentifier              -- UNIQUE
             modifiedDate          DateTime
 
             deriving Show
 
+        -- https://technet.microsoft.com/ru-ru/library/ms124622(v=sql.100).aspx
         WorkOrder
-            Id                          sql=WorkOrderID
+            Id                          sql=WorkOrderID   -- PRIMARY
             productID     ProductId
             orderQty      Int
             stockedQty    Int

@@ -11,21 +11,24 @@ import           Data.List (isInfixOf)
 import           Data.Proxy (Proxy)
 import qualified Data.Text as Text
 import           Data.Traversable (for)
-import           Foreign.Hoppy.Runtime (withScopedPtr)
+import           Foreign.Hoppy.Runtime (nullptr, withScopedPtr)
 import           System.Environment (getArgs)
 
 import           QAbstractItemView
+import           QAction
 import           QApplication
 import           QBoxLayout
 import           QCoreApplication
 import           QLineEdit
 import           QMainWindow
 import           QTabWidget
+import           QtCore (QtContextMenuPolicy (ActionsContextMenu))
 import           QTreeView
 import           QTreeWidget
 import           QTreeWidgetItem
 import           QVBoxLayout
-import           QWidget (QWidget, cast, setLayout, showMaximized)
+import           QWidget (QWidget, cast, insertAction, setContextMenuPolicy,
+                          setLayout, showMaximized)
 import qualified QWidget
 import           Signal
 
@@ -47,21 +50,25 @@ makeMainWindow = do
     setUnifiedTitleAndToolBarOnMac window True
 
     tabs <- QTabWidget.new
-    void $ addTableTab tabs pProduct
+    do
+        productView <- addTableTab tabs "Продукция (Product)" pProduct
+        setContextMenuPolicy productView ActionsContextMenu
+        insertAction         productView (nullptr :: QAction)
+            =<< makeAction (print True)
     setCentralWidget window tabs
 
     pure (QWidget.cast window)
   where
-    addTableTab tabs pTable = do
-        tab <- makeTableTab pTable
-        addTab tabs tab name
-        where name = Text.unpack . unDBName . entityDB $ entityDef pTable
+    addTableTab tabs name pTable = do
+        (tab, view) <- makeTableTab pTable
+        void $ addTab tabs tab name
+        pure view
 
-makeTableTab :: SqlTable record => Proxy record -> IO QWidget
+makeTableTab :: SqlTable record => Proxy record -> IO (QWidget, QTreeWidget)
 makeTableTab pTable = do
-    w   <- QWidget.new
+    tab <- QWidget.new
     box <- QVBoxLayout.new
-    setLayout w box
+    setLayout tab box
 
     search <- QLineEdit.new
     setPlaceholderText    search "Фильтр..."
@@ -73,7 +80,7 @@ makeTableTab pTable = do
 
     connect_  search textChangedSignal $ updateViewWithSearch view
 
-    pure w
+    pure (tab, view)
 
 makeTableView
     :: forall record . SqlTable record => Proxy record -> IO QTreeWidget
@@ -119,3 +126,9 @@ updateViewWithSearch view searchTerms = do
                 pure $ or matched
         setHidden item $ not matched
     where match txt = map toLower searchTerms `isInfixOf` map toLower txt
+
+makeAction :: IO () -> IO QAction
+makeAction handler = do
+    action <- QAction.newWithText "Заказы (WorkOrder)"
+    connect_ action triggeredSignal $ const handler
+    pure action
