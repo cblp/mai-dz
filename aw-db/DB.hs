@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -7,41 +8,16 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module DB
-    (
-    -- * DB schema
-    Product (..),
-    ProductId,
-    pProduct,
-    WorkOrder (..),
-    WorkOrderId,
-    -- * DB tools
-    DB,
-    SqlTable,
-    -- * Persist re-exports
-    DBName (..),
-    Entity (..),
-    EntityDef (..),
-    FieldDef (..),
-    PersistEntity (..),
-    PersistField (..),
-    PersistValue (..),
-    SqlBackend,
-    fromPersistValueText,
-    runDB,
-    selectList,
-    ) where
+module DB where
 
 import           Control.Monad.Logger (NoLoggingT)
 import           Control.Monad.Reader (ReaderT)
 import           Control.Monad.Trans.Resource (ResourceT)
+import           Data.Coerce (Coercible)
 import           Data.Decimal (Decimal)
 import           Data.Proxy (Proxy (Proxy))
 import           Data.Text (Text)
-import           Database.Persist (DBName (..), Entity (..), EntityDef (..),
-                                   FieldDef (..), PersistEntity (..),
-                                   PersistField (..), PersistValue (..),
-                                   fromPersistValueText, selectList)
+import           Database.Persist (PersistEntity (..), PersistField (..))
 import           Database.Persist.Sql (SqlBackend)
 import           Database.Persist.Sqlite (runSqlite)
 import           Database.Persist.TH (mkPersist, persistUpperCase, share,
@@ -53,6 +29,7 @@ type SqlTable record =
     ( PersistEntity record
     , PersistEntityBackend record ~ SqlBackend
     , PersistField record
+    , Coercible (Key record) Int
     )
 
 type Name = Text
@@ -65,7 +42,7 @@ share
     [persistUpperCase|
         -- https://technet.microsoft.com/ru-ru/library/ms124719(v=sql.100).aspx
         Product
-            Id                                  sql=ProductID   -- PRIMARY
+            Id                    Int           sql=ProductID   -- PRIMARY
             name                  Name                          -- UNIQUE
             productNumber         Text                          -- UNIQUE
             makeFlag              Bool
@@ -95,7 +72,7 @@ share
 
         -- https://technet.microsoft.com/ru-ru/library/ms124622(v=sql.100).aspx
         WorkOrder
-            Id                          sql=WorkOrderID   -- PRIMARY
+            Id            Int           sql=WorkOrderID   -- PRIMARY
             productID     ProductId
             orderQty      Int
             stockedQty    Int
@@ -109,6 +86,9 @@ share
 
 pProduct :: Proxy Product
 pProduct = Proxy
+
+pWorkOrder :: Proxy WorkOrder
+pWorkOrder = Proxy
 
 type DB = ReaderT SqlBackend (NoLoggingT (ResourceT IO))
 

@@ -19,6 +19,7 @@ executables:
     dependencies:
       # global
         - hoppy-runtime
+        - persistent
         - text
       # project
         - aw-qt
