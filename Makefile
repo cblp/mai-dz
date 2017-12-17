@@ -22,9 +22,9 @@ build/instawdb.sql: build/AdventureWorks-oltp-install-script.zip
 	unzip AdventureWorks-oltp-install-script.zip
 	iconv -f UTF-16 build/instawdb.sql | sponge build/instawdb.sql
 
-db.sqlite: build/instawdb.sql loadCsv.sql
+db.sqlite: build/instawdb.sql aw/db/loadCsv.sql
 	rm -f $@
-	sqlite3 $@ < loadCsv.sql
+	sqlite3 $@ < aw/db/loadCsv.sql
 
 $(QTAH_LIB):
 	stack build --only-dependencies

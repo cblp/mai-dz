@@ -12,7 +12,11 @@ library:
       - persistent-template
       - resourcet
       - text
-    source-dirs: aw-db
+    exposed-modules:
+      - DB
+    other-modules:
+      - DB.Instances
+    source-dirs: aw/db
 
 executables:
   aw:
@@ -26,6 +30,8 @@ executables:
       # package
         - mai-dz
     main: Main
+    other-modules:
+      - Main
     source-dirs: aw
   sks:
     dependencies:
