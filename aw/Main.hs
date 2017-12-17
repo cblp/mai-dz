@@ -176,7 +176,4 @@ displayWorkOrder tabs view = do
 
 closeTab :: QTabWidget -> Int -> IO ()
 closeTab _    0 = pure ()
-closeTab tabs i = do
-    tab <- QTabWidget.widget tabs i
-    delete tab
-    -- removeTab tabs i
+closeTab tabs i = delete =<< QTabWidget.widget tabs i
