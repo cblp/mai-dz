@@ -74,7 +74,7 @@ addQueryTab
     => QTabWidget
     -> String
     -> [Filter record]
-    -> IO (QBoxLayout, QTreeWidget) -- ^ tab's layout and view of quieried items
+    -> IO (QBoxLayout, QTreeWidget) -- ^ tab's layout and view of queried items
 addQueryTab tabs name queryFilters = do
     (tab, toolBarL, view) <- makeQueryTab queryFilters
     void $ addTab tabs tab name
@@ -84,7 +84,7 @@ addQueryTab tabs name queryFilters = do
 makeQueryTab
     :: SqlTable record
     => [Filter record]
-    -> IO (QWidget, QBoxLayout, QTreeWidget) -- ^ tab, its layout, and view of quieried items
+    -> IO (QWidget, QBoxLayout, QTreeWidget) -- ^ tab, its layout, and view of queried items
 makeQueryTab queryFilters = do
     tab  <- QWidget.new
     tabL <- QVBoxLayout.new
