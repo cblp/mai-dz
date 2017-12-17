@@ -16,6 +16,7 @@ library
     , Graphics.UI.Qtah.Widgets.QAction as QAction
     , Graphics.UI.Qtah.Widgets.QApplication as QApplication
     , Graphics.UI.Qtah.Widgets.QBoxLayout as QBoxLayout
+    , Graphics.UI.Qtah.Widgets.QHBoxLayout as QHBoxLayout
     , Graphics.UI.Qtah.Widgets.QLabel as QLabel
     , Graphics.UI.Qtah.Widgets.QLineEdit as QLineEdit
     , Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow

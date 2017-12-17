@@ -23,13 +23,13 @@ import           QAbstractItemView
 import           QApplication
 import           QBoxLayout
 import           QCoreApplication
+import           QHBoxLayout
 import           QLineEdit
 import           QMainWindow
 import           QMessageBox
 import           QPushButton
 import           QTabWidget
 import           QtCore
-import           QToolBar
 import           QTreeView
 import           QTreeWidget
 import           QTreeWidgetItem
@@ -60,11 +60,11 @@ makeMainWindow = do
     setTabsClosable tabs True
     connect_        tabs tabCloseRequestedSignal $ closeTab tabs
     do
-        (toolBar, view) <- addQueryTab tabs "Продукция (Product)" pProduct []
-        displayWorkOrderButton <- QPushButton.newWithText "Заказы (WorkOrder)" -- TODO QToolButton
+        (toolBarL, view) <- addQueryTab tabs "Продукция (Product)" pProduct []
+        displayWorkOrderButton <- QPushButton.newWithText "Заказы (WorkOrder)"
         connect_ displayWorkOrderButton QAbstractButton.clickedSignal
             $ \_ -> displayWorkOrder tabs view
-        void $ QToolBar.addWidget toolBar displayWorkOrderButton
+        addWidget toolBarL displayWorkOrderButton
     setCentralWidget mainWindow tabs
 
     pure (QWidget.cast mainWindow)
@@ -75,37 +75,39 @@ addQueryTab
     -> String
     -> Proxy record
     -> [Filter record]
-    -> IO (QToolBar, QTreeWidget)
+    -> IO (QBoxLayout, QTreeWidget)
 addQueryTab tabs name pTable queryFilters = do
-    (tab, toolBar, view) <- makeQueryTab pTable queryFilters
+    (tab, toolBarL, view) <- makeQueryTab pTable queryFilters
     void $ addTab tabs tab name
     setCurrentWidget tabs tab
-    pure (toolBar, view)
+    pure (toolBarL, view)
 
 makeQueryTab
     :: SqlTable record
     => Proxy record
     -> [Filter record]
-    -> IO (QWidget, QToolBar, QTreeWidget)
+    -> IO (QWidget, QBoxLayout, QTreeWidget)
 makeQueryTab pTable queryFilters = do
     tab  <- QWidget.new
     tabL <- QVBoxLayout.new
     setLayout tab tabL
 
-    toolBar <- QToolBar.new
-    QBoxLayout.addWidget tabL toolBar
+    toolBar <- QWidget.new
+    addWidget tabL toolBar
+    toolBarL <- QHBoxLayout.new
+    setLayout toolBar toolBarL
 
     search <- QLineEdit.new
-    setPlaceholderText    search "Фильтр..."
-    setClearButtonEnabled search True
-    void $ QToolBar.addWidget toolBar search
+    setPlaceholderText    search   "Фильтр..."
+    setClearButtonEnabled search   True
+    addWidget             toolBarL search
 
     view <- makeQueryView pTable queryFilters
-    QBoxLayout.addWidget tabL   view
+    addWidget tabL   view
 
-    connect_             search textChangedSignal $ updateViewWithSearch view
+    connect_  search textChangedSignal $ updateViewWithSearch view
 
-    pure (tab, toolBar, view)
+    pure (tab, QBoxLayout.cast toolBarL, view)
 
 makeQueryView
     :: forall record
