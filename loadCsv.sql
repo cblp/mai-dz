@@ -58,7 +58,7 @@ CREATE TABLE [WorkOrder](
     [WorkOrderID] [int] IDENTITY (1, 1) NOT NULL,
     [ProductID] [int] NOT NULL,
     [OrderQty] [int] NOT NULL,
-    [StockedQty], -- AS ISNULL([OrderQty] - [ScrappedQty], 0),
+    [StockedQty] [int] NOT NULL, -- AS ISNULL([OrderQty] - [ScrappedQty], 0),
     [ScrappedQty] [smallint] NOT NULL,
     [StartDate] [datetime] NOT NULL,
     [EndDate] [datetime] NULL,
@@ -69,3 +69,7 @@ CREATE TABLE [WorkOrder](
     CONSTRAINT [CK_WorkOrder_ScrappedQty] CHECK ([ScrappedQty] >= 0),
     CONSTRAINT [CK_WorkOrder_EndDate] CHECK (([EndDate] >= [StartDate]) OR ([EndDate] IS NULL))
 );
+
+.import build/WorkOrder.csv WorkOrder
+
+UPDATE [WorkOrder] set [ScrapReasonID] = NULL WHERE [ScrapReasonID] = "";

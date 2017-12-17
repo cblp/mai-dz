@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -11,25 +12,31 @@ module DB
     -- * DB schema
     Product (..),
     ProductId,
+    pProduct,
+    WorkOrder (..),
+    WorkOrderId,
     -- * DB tools
     DB,
+    SqlTable,
     -- * Persist re-exports
     DBName (..),
     Entity (..),
     EntityDef (..),
     FieldDef (..),
     PersistEntity (..),
+    PersistField (..),
     PersistValue (..),
+    SqlBackend,
     fromPersistValueText,
     runDB,
     selectList,
-    toPersistValue,
     ) where
 
 import           Control.Monad.Logger (NoLoggingT)
 import           Control.Monad.Reader (ReaderT)
 import           Control.Monad.Trans.Resource (ResourceT)
 import           Data.Decimal (Decimal)
+import           Data.Proxy (Proxy (Proxy))
 import           Data.Text (Text)
 import           Database.Persist (DBName (..), Entity (..), EntityDef (..),
                                    FieldDef (..), PersistEntity (..),
@@ -41,6 +48,12 @@ import           Database.Persist.TH (mkPersist, persistUpperCase, share,
                                       sqlSettings)
 
 import           DB.Instances ()
+
+type SqlTable record =
+    ( PersistEntity record
+    , PersistEntityBackend record ~ SqlBackend
+    , PersistField record
+    )
 
 type Name = Text
 type DateTime = Text
@@ -78,7 +91,22 @@ share
             modifiedDate          DateTime
 
             deriving Show
+
+        WorkOrder
+            Id                          sql=WorkOrderID
+            productID     ProductId
+            orderQty      Int
+            stockedQty    Int
+            scrappedQty   Int
+            startDate     DateTime
+            endDate       DateTime Maybe
+            dueDate       DateTime
+            scrapReasonID Int Maybe
+            modifiedDate  DateTime
     |]
+
+pProduct :: Proxy Product
+pProduct = Proxy
 
 type DB = ReaderT SqlBackend (NoLoggingT (ResourceT IO))
 
