@@ -15,7 +15,7 @@ import           Database.Persist (DBName (..), Entity (..), EntityDef (..),
                                    FieldDef (..), Filter, PersistEntity (..),
                                    PersistField (..), PersistValue (..),
                                    fromPersistValueText, selectList, (==.))
-import           Foreign.Hoppy.Runtime (nullptr, withScopedPtr)
+import           Foreign.Hoppy.Runtime (delete, nullptr, withScopedPtr)
 import           System.Environment (getArgs)
 
 import           QAbstractButton
@@ -57,6 +57,8 @@ makeMainWindow = do
     setUnifiedTitleAndToolBarOnMac mainWindow True
 
     tabs <- QTabWidget.new
+    setTabsClosable tabs True
+    connect_        tabs tabCloseRequestedSignal $ closeTab tabs
     do
         (toolBar, view) <- addQueryTab tabs "Продукция (Product)" pProduct []
         displayWorkOrderButton <- QPushButton.newWithText "Заказы (WorkOrder)" -- TODO QToolButton
@@ -171,3 +173,10 @@ displayWorkOrder tabs view = do
             view
             "Не выбран продукт"
             "Выберите продукт для отображения заказов"
+
+closeTab :: QTabWidget -> Int -> IO ()
+closeTab _    0 = pure ()
+closeTab tabs i = do
+    tab <- QTabWidget.widget tabs i
+    delete tab
+    -- removeTab tabs i
