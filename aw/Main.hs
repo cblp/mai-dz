@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 import           Control.Monad (void)
@@ -8,7 +9,7 @@ import           Data.Char (toLower)
 import           Data.Coerce (coerce)
 import           Data.Foldable (for_)
 import           Data.List (isInfixOf)
-import           Data.Proxy (Proxy)
+import           Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as Text
 import           Data.Traversable (for)
 import           Database.Persist (DBName (..), Entity (..), EntityDef (..),
@@ -60,7 +61,7 @@ makeMainWindow = do
     setTabsClosable tabs True
     connect_        tabs tabCloseRequestedSignal $ closeTab tabs
     do
-        (toolBarL, view) <- addQueryTab tabs "Продукция (Product)" pProduct []
+        (toolBarL, view) <- addQueryTab @Product tabs "Продукция (Product)" []
         displayWorkOrderButton <- QPushButton.newWithText "Заказы (WorkOrder)"
         connect_ displayWorkOrderButton QAbstractButton.clickedSignal
             $ \_ -> displayWorkOrder tabs view
@@ -73,21 +74,19 @@ addQueryTab
     :: SqlTable record
     => QTabWidget
     -> String
-    -> Proxy record
     -> [Filter record]
-    -> IO (QBoxLayout, QTreeWidget)
-addQueryTab tabs name pTable queryFilters = do
-    (tab, toolBarL, view) <- makeQueryTab pTable queryFilters
+    -> IO (QBoxLayout, QTreeWidget) -- ^ tab's layout and view of quieried items
+addQueryTab tabs name queryFilters = do
+    (tab, toolBarL, view) <- makeQueryTab queryFilters
     void $ addTab tabs tab name
     setCurrentWidget tabs tab
     pure (toolBarL, view)
 
 makeQueryTab
     :: SqlTable record
-    => Proxy record
-    -> [Filter record]
-    -> IO (QWidget, QBoxLayout, QTreeWidget)
-makeQueryTab pTable queryFilters = do
+    => [Filter record]
+    -> IO (QWidget, QBoxLayout, QTreeWidget) -- ^ tab, its layout, and view of quieried items
+makeQueryTab queryFilters = do
     tab  <- QWidget.new
     tabL <- QVBoxLayout.new
     setLayout tab tabL
@@ -102,7 +101,7 @@ makeQueryTab pTable queryFilters = do
     setClearButtonEnabled search   True
     addWidget             toolBarL search
 
-    view <- makeQueryView pTable queryFilters
+    view <- makeQueryView queryFilters
     addWidget tabL   view
 
     connect_  search textChangedSignal $ updateViewWithSearch view
@@ -110,12 +109,8 @@ makeQueryTab pTable queryFilters = do
     pure (tab, QBoxLayout.cast toolBarL, view)
 
 makeQueryView
-    :: forall record
-     . SqlTable record
-    => Proxy record
-    -> [Filter record]
-    -> IO QTreeWidget
-makeQueryView pTable queryFilters = do
+    :: forall record . SqlTable record => [Filter record] -> IO QTreeWidget
+makeQueryView queryFilters = do
     view <- QTreeWidget.new
     setAlternatingRowColors view True
 
@@ -142,7 +137,7 @@ makeQueryView pTable queryFilters = do
     setSortingEnabled view True
 
     pure view
-    where fields = entityFields $ entityDef pTable
+    where fields = entityFields $ entityDef (Proxy :: Proxy record)
 
 updateViewWithSearch :: QTreeWidget -> String -> IO ()
 updateViewWithSearch view searchTerms = do
@@ -169,7 +164,6 @@ displayWorkOrder tabs view = do
             name      <- QTreeWidgetItem.text item 0
             void $ addQueryTab tabs
                                ("Заказы (WorkOrder) для " ++ name)
-                               pWorkOrder
                                [WorkOrderProductID ==. ProductKey productId]
         else void $ QMessageBox.critical
             view

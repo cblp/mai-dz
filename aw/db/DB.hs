@@ -15,7 +15,6 @@ import           Control.Monad.Reader (ReaderT)
 import           Control.Monad.Trans.Resource (ResourceT)
 import           Data.Coerce (Coercible)
 import           Data.Decimal (Decimal)
-import           Data.Proxy (Proxy (Proxy))
 import           Data.Text (Text)
 import           Database.Persist (PersistEntity (..), PersistField (..))
 import           Database.Persist.Sql (SqlBackend)
@@ -83,12 +82,6 @@ share
             scrapReasonID Int Maybe
             modifiedDate  DateTime
     |]
-
-pProduct :: Proxy Product
-pProduct = Proxy
-
-pWorkOrder :: Proxy WorkOrder
-pWorkOrder = Proxy
 
 type DB = ReaderT SqlBackend (NoLoggingT (ResourceT IO))
 
