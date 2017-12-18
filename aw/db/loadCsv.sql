@@ -1,6 +1,26 @@
 .mode csv
 .separator "\t"
 
+CREATE TABLE [BillOfMaterials](
+    [BillOfMaterialsID] [int] IDENTITY (1, 1) NOT NULL,
+    [ProductAssemblyID] [int] NULL,
+    [ComponentID] [int] NOT NULL,
+    [StartDate] [datetime] NOT NULL CONSTRAINT [DF_BillOfMaterials_StartDate] DEFAULT (GETDATE()),
+    [EndDate] [datetime] NULL,
+    [UnitMeasureCode] [nchar](3) NOT NULL,
+    [BOMLevel] [smallint] NOT NULL,
+    [PerAssemblyQty] [decimal](8, 2) NOT NULL CONSTRAINT [DF_BillOfMaterials_PerAssemblyQty] DEFAULT (1.00),
+    [ModifiedDate] [datetime] NOT NULL CONSTRAINT [DF_BillOfMaterials_ModifiedDate] DEFAULT (GETDATE()),
+    CONSTRAINT [CK_BillOfMaterials_EndDate] CHECK (([EndDate] > [StartDate]) OR ([EndDate] = NULL)),
+    CONSTRAINT [CK_BillOfMaterials_ProductAssemblyID] CHECK ([ProductAssemblyID] <> [ComponentID]),
+    CONSTRAINT [CK_BillOfMaterials_BOMLevel] CHECK ((([ProductAssemblyID] = NULL)
+        AND ([BOMLevel] = 0) AND ([PerAssemblyQty] = 1.00))
+        OR (([ProductAssemblyID] IS NOT NULL) AND ([BOMLevel] >= 1))),
+    CONSTRAINT [CK_BillOfMaterials_PerAssemblyQty] CHECK ([PerAssemblyQty] >= 1.00)
+);
+
+.import build/BillOfMaterials.csv BillOfMaterials
+
 CREATE TABLE [Product](
     [ProductID] [int] IDENTITY (1, 1) NOT NULL,
     [Name] [Name] NOT NULL,
@@ -33,10 +53,10 @@ CREATE TABLE [Product](
     CONSTRAINT [CK_Product_ListPrice] CHECK ([ListPrice] >= 0.00),
     CONSTRAINT [CK_Product_Weight] CHECK ([Weight] > 0.00),
     CONSTRAINT [CK_Product_DaysToManufacture] CHECK ([DaysToManufacture] >= 0),
-    CONSTRAINT [CK_Product_ProductLine] CHECK (UPPER([ProductLine]) IN ('S', 'T', 'M', 'R') OR [ProductLine] == NULL),
-    CONSTRAINT [CK_Product_Class] CHECK (UPPER([Class]) IN ('L', 'M', 'H') OR [Class] == NULL),
-    CONSTRAINT [CK_Product_Style] CHECK (UPPER([Style]) IN ('W', 'M', 'U') OR [Style] == NULL),
-    CONSTRAINT [CK_Product_SellEndDate] CHECK (([SellEndDate] >= [SellStartDate]) OR ([SellEndDate] == NULL))
+    CONSTRAINT [CK_Product_ProductLine] CHECK (UPPER([ProductLine]) IN ('S', 'T', 'M', 'R') OR [ProductLine] = NULL),
+    CONSTRAINT [CK_Product_Class] CHECK (UPPER([Class]) IN ('L', 'M', 'H') OR [Class] = NULL),
+    CONSTRAINT [CK_Product_Style] CHECK (UPPER([Style]) IN ('W', 'M', 'U') OR [Style] = NULL),
+    CONSTRAINT [CK_Product_SellEndDate] CHECK (([SellEndDate] >= [SellStartDate]) OR ([SellEndDate] = NULL))
 );
 
 .import build/Product.csv Product

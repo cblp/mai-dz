@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -72,11 +73,11 @@ makeMainWindow = do
                 $ \_ -> displayWorkOrder tabs view
             addWidget toolBarL displayWorkOrderButton
         do
-            displayBillOfMaterialsButton <- QPushButton.newWithText
+            displayBomButton <- QPushButton.newWithText
                 "Компоненты (BillOfMaterials)"
-            connect_ displayBillOfMaterialsButton QAbstractButton.clickedSignal
-                $ \_ -> displayBillOfMaterials tabs view
-            addWidget toolBarL displayBillOfMaterialsButton
+            connect_ displayBomButton QAbstractButton.clickedSignal
+                $ \_ -> displayBom tabs view
+            addWidget toolBarL displayBomButton
     setCentralWidget mainWindow tabs
 
     pure (QWidget.cast mainWindow)
@@ -93,10 +94,13 @@ addQueryTab tabs name queryFilters = do
     setCurrentWidget tabs tab
     pure (toolBarL, view)
 
-addBomTab :: QTabWidget -> (String, ProductId) -> IO ()
+addBomTab :: QTabWidget -> (Name, ProductId) -> IO ()
 addBomTab tabs (prodName, prodId) = do
-    tab <- makeBillOfMaterialsView (prodName, prodId)
-    void $ addTab tabs tab $ "Компоненты (BillOfMaterials) для " ++ prodName
+    tab <- makeBomView (prodName, prodId)
+    void
+        $  addTab tabs tab
+        $  "Компоненты (BillOfMaterials) для "
+        ++ Text.unpack prodName
     setCurrentWidget tabs tab
 
 makeQueryTab
@@ -137,12 +141,13 @@ makeQueryView queryFilters = do
     pure view
     where fields = entityFields $ entityDef (Proxy :: Proxy record)
 
-makeBillOfMaterialsView :: (String, ProductId) -> IO QTreeWidget
-makeBillOfMaterialsView product = do
+makeBomView :: (Name, ProductId) -> IO QTreeWidget
+makeBomView product = do
     view <- QTreeWidget.new
     setAlternatingRowColors view True
     setHeaderLabels         view ["Name"]
     root <- invisibleRootItem view
+    connect_ view itemExpandedSignal loadBomChildren
     addBomItem root product
     pure view
 
@@ -172,6 +177,7 @@ loadQueryResult view queryFilters = do
     -- In order to avoid performance issues, it is recommended that sorting is
     -- enabled after inserting the items into the tree.
     setSortingEnabled view True
+    sortItems view 0 AscendingOrder
     where fields = entityFields $ entityDef (Proxy :: Proxy record)
 
 updateViewWithSearch :: QTreeWidget -> String -> IO ()
@@ -205,14 +211,14 @@ displayWorkOrder tabs view = do
             "Не выбран продукт"
             "Выберите продукт для отображения заказов"
 
-displayBillOfMaterials :: QTabWidget -> QTreeWidget -> IO ()
-displayBillOfMaterials tabs view = do
+displayBom :: QTabWidget -> QTreeWidget -> IO ()
+displayBom tabs view = do
     item <- currentItem view
     if item /= nullptr
         then do
             prodId   <- getData item 0 (fromEnum UserRole) >>= toInt
             prodName <- QTreeWidgetItem.text item 0
-            addBomTab tabs (prodName, ProductKey prodId)
+            addBomTab tabs (Text.pack prodName, ProductKey prodId)
         else void $ QMessageBox.critical
             view
             "Не выбран продукт"
@@ -222,9 +228,19 @@ closeTab :: QTabWidget -> Int -> IO ()
 closeTab _    0 = pure ()
 closeTab tabs i = delete =<< QTabWidget.widget tabs i
 
-addBomItem :: QTreeWidgetItem -> (String, ProductId) -> IO ()
+addBomItem :: QTreeWidgetItem -> (Name, ProductId) -> IO ()
 addBomItem parentItem (prodName, ProductKey prodId) = do
-    item <- QTreeWidgetItem.newWithParentItemAndStrings parentItem [prodName]
+    item <- QTreeWidgetItem.newWithParentItemAndStrings
+        parentItem
+        [Text.unpack prodName]
     setData item 0 (fromEnum UserRole)
         =<< QVariant.newWithInt (coerce prodId :: Int)
     setChildIndicatorPolicy item ShowIndicator
+
+loadBomChildren :: QTreeWidgetItem -> IO ()
+loadBomChildren parentItem = do
+    prodId <- getData parentItem 0 (fromEnum UserRole) >>= toInt
+    boms   <- runDB $ selectBillOfMaterialsWithProductNameByProductAssemblyID
+        (ProductKey prodId)
+    for_ boms $ addBomItem parentItem
+    setChildIndicatorPolicy parentItem DontShowIndicatorWhenChildless
