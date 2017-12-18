@@ -5,12 +5,9 @@ name: mai-dz
 library:
     dependencies:
       - Decimal
-      - monad-logger
-      - mtl
       - persistent
       - persistent-sqlite
       - persistent-template
-      - resourcet
       - text
     exposed-modules:
       - DB

@@ -9,17 +9,13 @@
 
 module DB where
 
-import           Control.Monad.Logger (NoLoggingT)
-import           Control.Monad.Reader (ReaderT)
-import           Control.Monad.Trans.Resource (ResourceT)
 import           Data.Coerce (Coercible)
 import           Data.Decimal (Decimal)
 import           Data.Text (Text)
 import           Database.Persist (PersistEntity (..), PersistField (..))
-import           Database.Persist.Sql (SqlBackend)
+import           Database.Persist.Sql (SqlBackend, SqlPersistM)
 import           Database.Persist.Sqlite (runSqlite)
-import           Database.Persist.TH (mkPersist, persistUpperCase, share,
-                                      sqlSettings)
+import           Database.Persist.TH (mkPersist, persistUpperCase, sqlSettings)
 
 import           DB.Instances ()
 
@@ -35,8 +31,8 @@ type DateTime = Text
 type Money = Decimal
 type UniqueIdentifier = Text
 
-share
-    [mkPersist sqlSettings]
+mkPersist
+    sqlSettings
     [persistUpperCase|
         -- https://technet.microsoft.com/ru-ru/library/ms124719(v=sql.100).aspx
         Product
@@ -82,7 +78,5 @@ share
             modifiedDate  DateTime
     |]
 
-type DB = ReaderT SqlBackend (NoLoggingT (ResourceT IO))
-
-runDB :: DB a -> IO a
+runDB :: SqlPersistM a -> IO a
 runDB = runSqlite "db.sqlite"

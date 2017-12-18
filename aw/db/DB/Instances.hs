@@ -3,9 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module DB.Instances
-    (
-    ) where
+module DB.Instances () where
 
 import           Data.Decimal (DecimalRaw, realFracToDecimal)
 import           Data.Semigroup ((<>))
