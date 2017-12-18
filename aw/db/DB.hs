@@ -2,6 +2,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -34,7 +35,19 @@ type UniqueIdentifier = Text
 mkPersist
     sqlSettings
     [persistUpperCase|
-        -- https://technet.microsoft.com/ru-ru/library/ms124719(v=sql.100).aspx
+        -- | https://technet.microsoft.com/ru-ru/library/ms124597(v=sql.100).aspx
+        BillOfMaterials
+            Id                Int             sql=BillOfMaterialsID   -- PRIMARY
+            productAssemblyID ProductId Maybe
+            componentID       ProductId
+            startDate         DateTime
+            endDate           DateTime Maybe
+            unitMeasureCode   Text
+            bomLevel          Int
+            perAssemblyQty    Decimal
+            modifiedDate      DateTime
+
+        -- | https://technet.microsoft.com/ru-ru/library/ms124719(v=sql.100).aspx
         Product
             Id                    Int           sql=ProductID   -- PRIMARY
             name                  Name                          -- UNIQUE
@@ -64,7 +77,7 @@ mkPersist
 
             deriving Show
 
-        -- https://technet.microsoft.com/ru-ru/library/ms124622(v=sql.100).aspx
+        -- | https://technet.microsoft.com/ru-ru/library/ms124622(v=sql.100).aspx
         WorkOrder
             Id            Int           sql=WorkOrderID   -- PRIMARY
             productID     ProductId

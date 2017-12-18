@@ -3,6 +3,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
+import           Prelude hiding (product)
+
 import           Control.Monad (void)
 import           Data.Char (toLower)
 import           Data.Coerce (coerce)
@@ -63,10 +65,18 @@ makeMainWindow = do
     connect_        tabs tabCloseRequestedSignal $ closeTab tabs
     do
         (toolBarL, view) <- addQueryTab @Product tabs "Продукция (Product)" []
-        displayWorkOrderButton <- QPushButton.newWithText "Заказы (WorkOrder)"
-        connect_ displayWorkOrderButton QAbstractButton.clickedSignal
-            $ \_ -> displayWorkOrder tabs view
-        addWidget toolBarL displayWorkOrderButton
+        do
+            displayWorkOrderButton <- QPushButton.newWithText
+                "Заказы (WorkOrder)"
+            connect_ displayWorkOrderButton QAbstractButton.clickedSignal
+                $ \_ -> displayWorkOrder tabs view
+            addWidget toolBarL displayWorkOrderButton
+        do
+            displayBillOfMaterialsButton <- QPushButton.newWithText
+                "Компоненты (BillOfMaterials)"
+            connect_ displayBillOfMaterialsButton QAbstractButton.clickedSignal
+                $ \_ -> displayBillOfMaterials tabs view
+            addWidget toolBarL displayBillOfMaterialsButton
     setCentralWidget mainWindow tabs
 
     pure (QWidget.cast mainWindow)
@@ -74,7 +84,7 @@ makeMainWindow = do
 addQueryTab
     :: SqlTable record
     => QTabWidget
-    -> String
+    -> String -- ^ tab name
     -> [Filter record]
     -> IO (QBoxLayout, QTreeWidget) -- ^ tab's layout and view of queried items
 addQueryTab tabs name queryFilters = do
@@ -82,6 +92,12 @@ addQueryTab tabs name queryFilters = do
     void $ addTab tabs tab name
     setCurrentWidget tabs tab
     pure (toolBarL, view)
+
+addBomTab :: QTabWidget -> (String, ProductId) -> IO ()
+addBomTab tabs (prodName, prodId) = do
+    tab <- makeBillOfMaterialsView (prodName, prodId)
+    void $ addTab tabs tab $ "Компоненты (BillOfMaterials) для " ++ prodName
+    setCurrentWidget tabs tab
 
 makeQueryTab
     :: SqlTable record
@@ -121,6 +137,15 @@ makeQueryView queryFilters = do
     pure view
     where fields = entityFields $ entityDef (Proxy :: Proxy record)
 
+makeBillOfMaterialsView :: (String, ProductId) -> IO QTreeWidget
+makeBillOfMaterialsView product = do
+    view <- QTreeWidget.new
+    setAlternatingRowColors view True
+    setHeaderLabels         view ["Name"]
+    root <- invisibleRootItem view
+    addBomItem root product
+    pure view
+
 loadQueryResult
     :: forall record
      . SqlTable record
@@ -131,9 +156,9 @@ loadQueryResult view queryFilters = do
     items :: [Entity record] <- runDB (selectList queryFilters [])
     for_ items $ \(Entity itemId record) -> do
         row <- case toPersistValue record of
-            PersistList row -> pure row
-            PersistMap  row -> pure $ map snd row
-            value           -> error $ show value
+            -- PersistList row -> pure row -- TODO remove?
+            PersistMap row -> pure $ map snd row
+            value          -> error $ show value
         labels <- for row $ \field -> case field of
             PersistNull -> pure ""
             _           -> case fromPersistValueText field of
@@ -170,16 +195,35 @@ displayWorkOrder tabs view = do
     item <- currentItem view
     if item /= nullptr
         then do
-            productId <- getData item 0 (fromEnum UserRole) >>= toInt
-            name      <- QTreeWidgetItem.text item 0
+            prodId <- getData item 0 (fromEnum UserRole) >>= toInt
+            name   <- QTreeWidgetItem.text item 0
             void $ addQueryTab tabs
                                ("Заказы (WorkOrder) для " ++ name)
-                               [WorkOrderProductID ==. ProductKey productId]
+                               [WorkOrderProductID ==. ProductKey prodId]
         else void $ QMessageBox.critical
             view
             "Не выбран продукт"
             "Выберите продукт для отображения заказов"
 
+displayBillOfMaterials :: QTabWidget -> QTreeWidget -> IO ()
+displayBillOfMaterials tabs view = do
+    item <- currentItem view
+    if item /= nullptr
+        then do
+            prodId   <- getData item 0 (fromEnum UserRole) >>= toInt
+            prodName <- QTreeWidgetItem.text item 0
+            addBomTab tabs (prodName, ProductKey prodId)
+        else void $ QMessageBox.critical
+            view
+            "Не выбран продукт"
+            "Выберите продукт для отображения компонентов"
+
 closeTab :: QTabWidget -> Int -> IO ()
 closeTab _    0 = pure ()
 closeTab tabs i = delete =<< QTabWidget.widget tabs i
+
+addBomItem :: QTreeWidgetItem -> (String, ProductId) -> IO ()
+addBomItem parentItem (prodName, ProductKey prodId) = do
+    item <- QTreeWidgetItem.newWithParentItemAndStrings parentItem [prodName]
+    setData item 0 (fromEnum UserRole)
+        =<< QVariant.newWithInt (coerce prodId :: Int)
