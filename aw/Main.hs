@@ -6,7 +6,7 @@
 
 import           Prelude hiding (product)
 
-import           Control.Monad (void, (<=<))
+import           Control.Monad (unless, void, (<=<))
 import           Data.Char (toLower)
 import           Data.Coerce (coerce)
 import           Data.Foldable (for_)
@@ -161,7 +161,8 @@ makeBomView product = do
     setHeaderLabels         view ["Name"]
     root <- invisibleRootItem view
     connect_ view itemExpandedSignal loadBomChildren
-    addBomItem root product
+    item <- addBomItem root product
+    setCurrentItem view item
     pure view
 
 loadQueryResult
@@ -184,6 +185,8 @@ loadQueryResult view query = do
         item <- QTreeWidgetItem.newWithParentTreeAndStrings view labels
         setRecordId item (coerce itemId :: Int)
     for_ [0 .. length fields - 1] $ resizeColumnToContents view
+
+    unless (null items) $ setCurrentItem view =<< topLevelItem view 0
 
     -- In order to avoid performance issues, it is recommended that sorting is
     -- enabled after inserting the items into the tree.
@@ -240,13 +243,14 @@ closeTab :: QTabWidget -> Int -> IO ()
 closeTab _    0 = pure ()
 closeTab tabs i = delete =<< QTabWidget.widget tabs i
 
-addBomItem :: QTreeWidgetItem -> (Name, ProductId) -> IO ()
+addBomItem :: QTreeWidgetItem -> (Name, ProductId) -> IO QTreeWidgetItem
 addBomItem parentItem (prodName, ProductKey prodId) = do
     item <- QTreeWidgetItem.newWithParentItemAndStrings
         parentItem
         [Text.unpack prodName]
     setRecordId             item prodId
     setChildIndicatorPolicy item ShowIndicator
+    pure item
 
 loadBomChildren :: QTreeWidgetItem -> IO ()
 loadBomChildren parentItem = do
