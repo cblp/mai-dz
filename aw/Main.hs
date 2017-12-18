@@ -28,6 +28,9 @@ import           QLineEdit
 import           QMainWindow
 import           QMessageBox
 import           QPushButton
+import           QShowEvent
+import           Qt.Event
+import           Qt.Signal
 import           QTabWidget
 import           QtCore
 import           QTreeView
@@ -37,7 +40,6 @@ import           QVariant
 import           QVBoxLayout
 import           QWidget (QWidget, cast, setLayout, showMaximized)
 import qualified QWidget
-import           Signal
 
 import           DB
 
@@ -112,9 +114,20 @@ makeQueryView
 makeQueryView queryFilters = do
     view <- QTreeWidget.new
     setAlternatingRowColors view True
-
     setHeaderLabels view $ map (Text.unpack . unDBName . fieldDB) fields
+    void $ onEvent view $ \(_ :: QShowEvent) -> do
+        loadQueryResult view queryFilters
+        pure True
+    pure view
+    where fields = entityFields $ entityDef (Proxy :: Proxy record)
 
+loadQueryResult
+    :: forall record
+     . SqlTable record
+    => QTreeWidget
+    -> [Filter record]
+    -> IO ()
+loadQueryResult view queryFilters = do
     items :: [Entity record] <- runDB (selectList queryFilters [])
     for_ items $ \(Entity itemId record) -> do
         row <- case toPersistValue record of
@@ -134,8 +147,6 @@ makeQueryView queryFilters = do
     -- In order to avoid performance issues, it is recommended that sorting is
     -- enabled after inserting the items into the tree.
     setSortingEnabled view True
-
-    pure view
     where fields = entityFields $ entityDef (Proxy :: Proxy record)
 
 updateViewWithSearch :: QTreeWidget -> String -> IO ()
