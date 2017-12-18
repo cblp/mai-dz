@@ -15,7 +15,7 @@
 *.prof
 /bin
 /build/
-/db.sqlite
+/db.sqlite*
 /lib
 cabal-dev
 cabal.project.local
