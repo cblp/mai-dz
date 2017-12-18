@@ -26,7 +26,7 @@ import           QAbstractItemView
 import           QApplication
 import           QBoxLayout
 import           QCoreApplication
-import           QHBoxLayout
+import           QGridLayout
 import           QLineEdit
 import           QMainWindow
 import           QMessageBox
@@ -39,7 +39,8 @@ import           QTreeWidget
 import           QTreeWidgetItem
 import           QVariant
 import           QVBoxLayout
-import           QWidget (QWidget, cast, setLayout, showMaximized)
+import           QWidget (QWidget, cast, setLayout, setStyleSheet,
+                          showMaximized)
 import qualified QWidget
 
 import           DB
@@ -63,19 +64,22 @@ makeMainWindow = do
     setTabsClosable tabs True
     connect_        tabs tabCloseRequestedSignal $ closeTab tabs
     do
-        (toolBarL, view) <- addQueryTab @Product tabs "Продукция (Product)" []
+        (toolBarGrid, view) <- addQueryTab @Product tabs
+                                                    "Продукция (Product)"
+                                                    (Just "road-150")
+                                                    []
         do
             displayWorkOrderButton <- QPushButton.newWithText
                 "Заказы (WorkOrder)"
             connect_ displayWorkOrderButton QAbstractButton.clickedSignal
                 $ \_ -> displayWorkOrder tabs view
-            addWidget toolBarL displayWorkOrderButton
+            QGridLayout.addWidget toolBarGrid displayWorkOrderButton 0 1
         do
             displayBomButton <- QPushButton.newWithText
                 "Компоненты (BillOfMaterials)"
             connect_ displayBomButton QAbstractButton.clickedSignal
                 $ \_ -> displayBom tabs view
-            addWidget toolBarL displayBomButton
+            QGridLayout.addWidget toolBarGrid displayBomButton 0 2
     setCentralWidget mainWindow tabs
 
     pure (QWidget.cast mainWindow)
@@ -84,13 +88,14 @@ addQueryTab
     :: SqlTable record
     => QTabWidget
     -> String -- ^ tab name
+    -> Maybe String -- ^ search hint
     -> [Filter record]
-    -> IO (QBoxLayout, QTreeWidget) -- ^ tab's layout and view of queried items
-addQueryTab tabs name query = do
-    (tab, toolBarL, view) <- makeQueryTab query
+    -> IO (QGridLayout, QTreeWidget) -- ^ tab's layout and view of queried items
+addQueryTab tabs name mSearchHint query = do
+    (tab, toolBarGrid, view) <- makeQueryTab mSearchHint query
     void $ addTab tabs tab name
     setCurrentWidget tabs tab
-    pure (toolBarL, view)
+    pure (toolBarGrid, view)
 
 addBomTab :: QTabWidget -> (Name, ProductId) -> IO ()
 addBomTab tabs (prodName, prodId) = do
@@ -103,29 +108,41 @@ addBomTab tabs (prodName, prodId) = do
 
 makeQueryTab
     :: SqlTable record
-    => [Filter record]
-    -> IO (QWidget, QBoxLayout, QTreeWidget) -- ^ tab, its layout, and view of queried items
-makeQueryTab query = do
-    tab  <- QWidget.new
-    tabL <- QVBoxLayout.new
-    setLayout tab tabL
+    => Maybe String -- ^ search hint
+    -> [Filter record]
+    -> IO (QWidget, QGridLayout, QTreeWidget) -- ^ tab, its layout, and view of queried items
+makeQueryTab mSearchHint query = do
+    tab    <- QWidget.new
+    tabBox <- QVBoxLayout.new
+    setLayout tab tabBox
 
     toolBar <- QWidget.new
-    addWidget tabL toolBar
-    toolBarL <- QHBoxLayout.new
-    setLayout toolBar toolBarL
+    QBoxLayout.addWidget tabBox toolBar
+    toolBarGrid <- QGridLayout.new
+    setVerticalSpacing toolBarGrid 0
+    setLayout          toolBar     toolBarGrid
 
     search <- QLineEdit.new
-    setPlaceholderText    search   "Фильтр..."
-    setClearButtonEnabled search   True
-    addWidget             toolBarL search
+    setPlaceholderText    search "Фильтр..."
+    setClearButtonEnabled search True
+    QGridLayout.addWidget toolBarGrid search 0 0
+
+    case mSearchHint of
+        Nothing   -> pure ()
+        Just hint -> do
+            searchHintButton <- QPushButton.newWithText $ "Например, " ++ hint
+            setFlat               searchHintButton True
+            QWidget.setStyleSheet searchHintButton "text-align: left;"
+            connect_              searchHintButton QAbstractButton.clickedSignal
+                $ \_ -> QLineEdit.setText search hint
+            QGridLayout.addWidget toolBarGrid searchHintButton 1 0
 
     view <- makeQueryView query
-    addWidget tabL   view
+    QBoxLayout.addWidget tabBox view
 
-    connect_  search textChangedSignal $ updateViewWithSearch view
+    connect_             search textChangedSignal $ updateViewWithSearch view
 
-    pure (tab, QBoxLayout.cast toolBarL, view)
+    pure (tab, toolBarGrid, view)
 
 makeQueryView
     :: forall record . SqlTable record => [Filter record] -> IO QTreeWidget
@@ -182,7 +199,7 @@ updateViewWithSearch view searchTerms = do
         matched <- case searchTerms of
             "" -> pure True
             _  -> do
-                columns <- columnCount item
+                columns <- QTreeWidgetItem.columnCount item
                 matched <- for [0 .. columns - 1] $ \j -> do
                     cellText <- QTreeWidgetItem.text item j
                     pure $ match cellText
@@ -199,6 +216,7 @@ displayWorkOrder tabs view = do
             name   <- QTreeWidgetItem.text item 0
             void $ addQueryTab tabs
                                ("Заказы (WorkOrder) для " ++ name)
+                               Nothing
                                [WorkOrderProductID ==. ProductKey prodId]
         else void $ QMessageBox.critical
             view
