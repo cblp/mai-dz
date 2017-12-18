@@ -227,3 +227,4 @@ addBomItem parentItem (prodName, ProductKey prodId) = do
     item <- QTreeWidgetItem.newWithParentItemAndStrings parentItem [prodName]
     setData item 0 (fromEnum UserRole)
         =<< QVariant.newWithInt (coerce prodId :: Int)
+    setChildIndicatorPolicy item ShowIndicator
