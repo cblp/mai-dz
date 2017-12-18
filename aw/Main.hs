@@ -6,7 +6,7 @@
 
 import           Prelude hiding (product)
 
-import           Control.Monad (void)
+import           Control.Monad (void, (<=<))
 import           Data.Char (toLower)
 import           Data.Coerce (coerce)
 import           Data.Foldable (for_)
@@ -31,8 +31,6 @@ import           QLineEdit
 import           QMainWindow
 import           QMessageBox
 import           QPushButton
-import           QShowEvent
-import           Qt.Event
 import           Qt.Signal
 import           QTabWidget
 import           QtCore
@@ -88,8 +86,8 @@ addQueryTab
     -> String -- ^ tab name
     -> [Filter record]
     -> IO (QBoxLayout, QTreeWidget) -- ^ tab's layout and view of queried items
-addQueryTab tabs name queryFilters = do
-    (tab, toolBarL, view) <- makeQueryTab queryFilters
+addQueryTab tabs name query = do
+    (tab, toolBarL, view) <- makeQueryTab query
     void $ addTab tabs tab name
     setCurrentWidget tabs tab
     pure (toolBarL, view)
@@ -107,7 +105,7 @@ makeQueryTab
     :: SqlTable record
     => [Filter record]
     -> IO (QWidget, QBoxLayout, QTreeWidget) -- ^ tab, its layout, and view of queried items
-makeQueryTab queryFilters = do
+makeQueryTab query = do
     tab  <- QWidget.new
     tabL <- QVBoxLayout.new
     setLayout tab tabL
@@ -122,7 +120,7 @@ makeQueryTab queryFilters = do
     setClearButtonEnabled search   True
     addWidget             toolBarL search
 
-    view <- makeQueryView queryFilters
+    view <- makeQueryView query
     addWidget tabL   view
 
     connect_  search textChangedSignal $ updateViewWithSearch view
@@ -131,13 +129,11 @@ makeQueryTab queryFilters = do
 
 makeQueryView
     :: forall record . SqlTable record => [Filter record] -> IO QTreeWidget
-makeQueryView queryFilters = do
+makeQueryView query = do
     view <- QTreeWidget.new
     setAlternatingRowColors view True
     setHeaderLabels view $ map (Text.unpack . unDBName . fieldDB) fields
-    void $ onEvent view $ \(_ :: QShowEvent) -> do
-        loadQueryResult view queryFilters
-        pure True
+    loadQueryResult view query
     pure view
     where fields = entityFields $ entityDef (Proxy :: Proxy record)
 
@@ -157,11 +153,10 @@ loadQueryResult
     => QTreeWidget
     -> [Filter record]
     -> IO ()
-loadQueryResult view queryFilters = do
-    items :: [Entity record] <- runDB (selectList queryFilters [])
+loadQueryResult view query = do
+    items :: [Entity record] <- runDB $ selectList query []
     for_ items $ \(Entity itemId record) -> do
         row <- case toPersistValue record of
-            -- PersistList row -> pure row -- TODO remove?
             PersistMap row -> pure $ map snd row
             value          -> error $ show value
         labels <- for row $ \field -> case field of
@@ -170,8 +165,7 @@ loadQueryResult view queryFilters = do
                 Left  e -> error $ Text.unpack e
                 Right r -> pure $ Text.unpack r
         item <- QTreeWidgetItem.newWithParentTreeAndStrings view labels
-        setData item 0 (fromEnum UserRole)
-            =<< QVariant.newWithInt (coerce itemId :: Int)
+        setRecordId item (coerce itemId :: Int)
     for_ [0 .. length fields - 1] $ resizeColumnToContents view
 
     -- In order to avoid performance issues, it is recommended that sorting is
@@ -201,7 +195,7 @@ displayWorkOrder tabs view = do
     item <- currentItem view
     if item /= nullptr
         then do
-            prodId <- getData item 0 (fromEnum UserRole) >>= toInt
+            prodId <- getRecordId item
             name   <- QTreeWidgetItem.text item 0
             void $ addQueryTab tabs
                                ("Заказы (WorkOrder) для " ++ name)
@@ -216,7 +210,7 @@ displayBom tabs view = do
     item <- currentItem view
     if item /= nullptr
         then do
-            prodId   <- getData item 0 (fromEnum UserRole) >>= toInt
+            prodId   <- getRecordId item
             prodName <- QTreeWidgetItem.text item 0
             addBomTab tabs (Text.pack prodName, ProductKey prodId)
         else void $ QMessageBox.critical
@@ -233,14 +227,22 @@ addBomItem parentItem (prodName, ProductKey prodId) = do
     item <- QTreeWidgetItem.newWithParentItemAndStrings
         parentItem
         [Text.unpack prodName]
-    setData item 0 (fromEnum UserRole)
-        =<< QVariant.newWithInt (coerce prodId :: Int)
+    setRecordId             item prodId
     setChildIndicatorPolicy item ShowIndicator
 
 loadBomChildren :: QTreeWidgetItem -> IO ()
 loadBomChildren parentItem = do
-    prodId <- getData parentItem 0 (fromEnum UserRole) >>= toInt
+    prodId <- getRecordId parentItem
     boms   <- runDB $ selectBillOfMaterialsWithProductNameByProductAssemblyID
         (ProductKey prodId)
     for_ boms $ addBomItem parentItem
     setChildIndicatorPolicy parentItem DontShowIndicatorWhenChildless
+
+recordIdRole :: Int
+recordIdRole = fromEnum UserRole
+
+getRecordId :: QTreeWidgetItem -> IO Int
+getRecordId item = getData item 0 recordIdRole >>= toInt
+
+setRecordId :: QTreeWidgetItem -> Int -> IO ()
+setRecordId item = setData item 0 recordIdRole <=< QVariant.newWithInt
