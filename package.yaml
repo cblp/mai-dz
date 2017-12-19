@@ -11,8 +11,6 @@ library:
       - text
     exposed-modules:
       - DB
-    other-modules:
-      - DB.Instances
     source-dirs: aw/db
 
 executables:
@@ -27,8 +25,6 @@ executables:
       # package
         - mai-dz
     main: Main
-    other-modules:
-      - Main
     source-dirs: aw
   sks:
     dependencies:
