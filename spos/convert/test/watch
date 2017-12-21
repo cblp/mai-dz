@@ -1,0 +1,5 @@
+#!/bin/bash
+set -eux -o pipefail
+
+test/script || true
+sos -p '^CMakeLists.txt' -p '^src/' -p '^test/' -c test/script
