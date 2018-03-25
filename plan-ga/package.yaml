@@ -1,0 +1,8 @@
+name: plan-ga
+
+executable:
+  main: Main
+
+dependencies:
+  - base
+  - QuickCheck
