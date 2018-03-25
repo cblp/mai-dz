@@ -19,5 +19,5 @@ instance Arbitrary Work where
 
 main :: IO ()
 main = do
-    work :: Work <- generate arbitrary
-    print work
+    works :: [Work] <- generate arbitrary
+    putStr "works = "; print works
