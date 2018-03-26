@@ -8,14 +8,14 @@ import           Graphics.Gloss
 import           Test.QuickCheck
 
 data Task = Task
-    { timeCost     :: Float -- time cost, in time units
-    , resourceCost :: Float -- resource cost, in resource units
+    { duration     :: Float -- in time units
+    , resourceCost :: Float -- in resource units
     }
     deriving Show
 
 instance Arbitrary Task where
     arbitrary = do
-        Positive timeCost <- arbitrary
+        Positive duration <- arbitrary
         Positive resourceCost <- arbitrary
         pure Task{..}
 
@@ -29,10 +29,10 @@ data Work = Work
 draw :: Schedule -> Picture
 draw = foldMap drawWork
   where
-    drawWork Work{task = Task{timeCost}, startTime} =
+    drawWork Work{task = Task{duration}, startTime} =
         translate startTime 0
         . color (makeColor 0 0 1 0.1)
-        $ rectangleSolid timeCost 100
+        $ rectangleSolid duration workBlockHeight
 
 main :: IO ()
 main = do
@@ -41,8 +41,18 @@ main = do
     let solution0 = [Work{task, startTime = 0} | task <- tasks]
     display' solution0
   where
-    display' =
-        display
-            (InWindow "Planning with genetic algorithm" (800, 600) (0, 0))
-            white
-        . draw
+    display' schedule = display window white $ translate dx dy pic
+      where
+        window = InWindow title (round width, round height) (0, 0)
+        pic = draw schedule
+        title = "Planning with genetic algorithm"
+        height = workBlockHeight
+        width = maximum
+            [ startTime + duration
+            | Work{task = Task{duration}, startTime} <- schedule
+            ]
+        dx = - width / 2
+        dy = 0
+
+workBlockHeight :: Float
+workBlockHeight = 100
