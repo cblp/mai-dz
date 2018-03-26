@@ -5,4 +5,5 @@ executable:
 
 dependencies:
   - base
+  - gloss
   - QuickCheck
