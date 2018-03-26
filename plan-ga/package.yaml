@@ -5,5 +5,9 @@ executable:
 
 dependencies:
   - base
+  - deepseq
   - gloss
+  - mtl
   - QuickCheck
+  - random
+  - simple-genetic-algorithm
