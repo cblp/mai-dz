@@ -9,5 +9,5 @@ packages:
 
 extra-deps:
   # plan-ga:
-    - git: https://github.com/cblp/simple-genetic-algorithm.git
-      commit: 7eb7289
+    - git: https://github.com/afiskon/simple-genetic-algorithm.git
+      commit: 5c4542351b8e0ac1b10ff9206277ca7de2484338

@@ -13,28 +13,34 @@ import           AI.GeneticAlgorithm.Simple
 import           Control.DeepSeq
 import           Control.Monad
 import           Control.Monad.State
+import           Data.List
 import           Data.Traversable
 import           GHC.Generics
 import           Graphics.Gloss
 import           System.Random
 
+type Time = Float
+
 data Task = Task
-    { duration     :: Float -- in time units
+    { duration     :: Time  -- in time units
     , resourceCost :: Float -- in resource units
     }
     deriving (Eq, Generic, NFData, Ord, Show)
 
 data Work = Work
     { task      :: Task
-    , startTime :: Float
+    , startTime :: Time
     }
     deriving (Eq, Generic, NFData, Ord, Show)
+
+endTime :: Work -> Time
+endTime Work{startTime, task = Task{duration}} = startTime + duration
 
 type Schedule = [Work]
 
 randomTask :: State StdGen Task
 randomTask = do
-    duration <- exp <$> randomS
+    duration <- randomRS (10, 100)
     resourceCost <- exp <$> randomS
     pure Task{..}
 
@@ -58,14 +64,27 @@ instance Chromosome Schedule where
             let startTime' = multiplier * startTime
             pure work{startTime = startTime'}
 
-    fitness schedule = _
+    fitness schedule = realToFrac $ fullfillmentMeasure / intersectionMeasure
+      where
+        diameter = maximum (map endTime schedule) - minimum (map startTime schedule)
+        fullfillmentMeasure = 1 / diameter
+        intersectionMeasure = sum
+            [ max 0 (min end1 end2 - max start1 start2)
+            | workTails <- tails schedule
+            , work1 : workTail <- pure workTails
+            , work2 <- workTail
+            , let start1 = startTime work1
+                  end1   = endTime   work1
+                  start2 = startTime work2
+                  end2   = endTime   work2
+            ]
 
 draw :: Schedule -> Picture
 draw = foldMap drawWork
   where
     drawWork Work{task = Task{duration}, startTime} =
         translate startTime 0
-        . color (makeColor 0 0 1 0.1)
+        . color (makeColor 0 0 1 0.33)
         $ rectangleSolid duration workBlockHeight
 
 main :: IO ()
@@ -78,11 +97,12 @@ main = do
     -- display' solution0
 
     let solution = runGA g populationSize 0.1 (runState $ randomSchedule tasks) stop
+    putStrLn $ "solution = " ++ show solution
     display' solution
 
   where
-    populationSize = 10
-    stop _ count = count > 10
+    populationSize = 100
+    stop _ count = count > 20
 
 display' :: Schedule -> IO ()
 display' schedule = display window white $ translate dx dy pic
@@ -103,3 +123,6 @@ workBlockHeight = 100
 
 randomS :: (Random a, RandomGen g) => State g a
 randomS = state random
+
+randomRS :: (Random a, RandomGen g) => (a, a) -> State g a
+randomRS = state . randomR
