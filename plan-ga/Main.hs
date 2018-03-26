@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -10,6 +11,7 @@ module Main (main) where
 
 import           AI.GeneticAlgorithm.Simple
 import           Control.DeepSeq
+import           Control.Lens
 import           Control.Monad
 import           Control.Monad.State
 import           Data.List
@@ -17,11 +19,11 @@ import           GHC.Generics
 import           Graphics.Gloss
 import           System.Random
 
-type Time = Float
+type Time = Int
 
 data Task = Task
     { duration     :: Time  -- in time units
-    , resourceCost :: Float -- in resource units
+    , resourceCost :: Int   -- in resource units
     }
     deriving (Eq, Generic, NFData, Ord, Show)
 
@@ -38,37 +40,44 @@ type Schedule = [Work]
 
 randomTask :: State StdGen Task
 randomTask = do
-    duration <- randomRS (10, 100)
-    resourceCost <- exp <$> randomS
+    duration <- randomRS (1, 100)
+    resourceCost <- randomRS (1, 100)
     pure Task{..}
 
 randomSchedule :: [Task] -> State StdGen Schedule
 randomSchedule = traverse $ \task -> do
-    startTime <- randomS
+    startTime <- randomRS (1, 1000)
     pure Work{task, startTime}
 
 instance Chromosome Schedule where
     crossover g schedule1 schedule2 = ([schedule], g)
       where
         schedule =
-            [ Work{startTime = (st1 + st2) / 2, task}
+            [ Work{startTime = (st1 + st2) `div` 2, task}
             | Work{startTime = st1, task} <- schedule1
             | Work{startTime = st2} <- schedule2
             ]
 
     mutation g schedule = (`runState` g) $ do
         i <- randomRS (0, length schedule - 1)
-        multiplier <- exp <$> randomS
+        d <- randomRS (0, 3 :: Int) <&> \case
+            0 -> -10
+            1 -> -1
+            2 -> 1
+            _ -> 10
         pure $ case splitAt i schedule of
             (before, work : after) ->
-                before ++ work{startTime = startTime work * multiplier} : after
+                before ++ work{startTime = max 0 $ startTime work + d} : after
             _ -> error "empty schedule"
 
-    fitness schedule = realToFrac $
-        fullfillmentMeasure / (1 + intersectionMeasure) ^ (2 :: Int)
+    fitness schedule =
+        1
+        / (1 + fromIntegral timeToStart)
+        / (1 + fromIntegral totalTime)
+        / (1 + fromIntegral intersectionMeasure) ^ (2 :: Int)
       where
-        diameter = maximum (map endTime schedule) - minimum (map startTime schedule)
-        fullfillmentMeasure = 1 / (1 + diameter)
+        timeToStart = minimum (map startTime schedule)
+        totalTime = maximum (map endTime schedule)
         intersectionMeasure = sum
             [ max 0 (min end1 end2 - max start1 start2)
             | workTails <- tails schedule
@@ -84,9 +93,9 @@ draw :: Schedule -> Picture
 draw = foldMap drawWork
   where
     drawWork Work{task = Task{duration}, startTime} =
-        translate startTime 0
+        translate (fromIntegral $ startTime + duration `div` 2) 0
         . color (makeColor 0 0 1 0.33)
-        $ rectangleSolid duration workBlockHeight
+        $ rectangleSolid (fromIntegral duration) workBlockHeight
 
 main :: IO ()
 main = do
@@ -100,6 +109,8 @@ main = do
     let solution =
             runGA g populationSize 0.1 (runState $ randomSchedule tasks) stop
     putStrLn $ "solution = " ++ show solution
+    putStrLn $ "min startTime = " ++ show (minimum $ map startTime solution)
+    putStrLn $ "max endTime = " ++ show (maximum $ map endTime solution)
     display' solution
 
   where
@@ -109,22 +120,16 @@ main = do
 display' :: Schedule -> IO ()
 display' schedule = display window white $ translate dx dy pic
   where
-    window = InWindow title (round width, round height) (0, 0)
+    window = InWindow title (width, round height) (0, 0)
     pic = draw schedule
     title = "Planning with genetic algorithm"
     height = workBlockHeight
-    width = maximum
-        [ startTime + duration
-        | Work{task = Task{duration}, startTime} <- schedule
-        ]
-    dx = - width / 2
+    width = maximum $ map endTime schedule
+    dx = - fromIntegral width / 2
     dy = 0
 
 workBlockHeight :: Float
 workBlockHeight = 100
-
-randomS :: (Random a, RandomGen g) => State g a
-randomS = state random
 
 randomRS :: (Random a, RandomGen g) => (a, a) -> State g a
 randomRS = state . randomR
