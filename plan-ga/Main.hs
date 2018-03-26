@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -14,7 +13,6 @@ import           Control.DeepSeq
 import           Control.Monad
 import           Control.Monad.State
 import           Data.List
-import           Data.Traversable
 import           GHC.Generics
 import           Graphics.Gloss
 import           System.Random
@@ -58,16 +56,19 @@ instance Chromosome Schedule where
             | Work{startTime = st2} <- schedule2
             ]
 
-    mutation g schedule = (`runState` g) $
-        for schedule $ \work@Work{startTime} -> do
-            multiplier <- exp <$> randomS
-            let startTime' = multiplier * startTime
-            pure work{startTime = startTime'}
+    mutation g schedule = (`runState` g) $ do
+        i <- randomRS (0, length schedule - 1)
+        multiplier <- exp <$> randomS
+        pure $ case splitAt i schedule of
+            (before, work : after) ->
+                before ++ work{startTime = startTime work * multiplier} : after
+            _ -> error "empty schedule"
 
-    fitness schedule = realToFrac $ fullfillmentMeasure / intersectionMeasure
+    fitness schedule = realToFrac $
+        fullfillmentMeasure / (1 + intersectionMeasure) ^ (2 :: Int)
       where
         diameter = maximum (map endTime schedule) - minimum (map startTime schedule)
-        fullfillmentMeasure = 1 / diameter
+        fullfillmentMeasure = 1 / (1 + diameter)
         intersectionMeasure = sum
             [ max 0 (min end1 end2 - max start1 start2)
             | workTails <- tails schedule
@@ -96,13 +97,14 @@ main = do
     -- let solution0 = [Work{task, startTime = 0} | task <- tasks]
     -- display' solution0
 
-    let solution = runGA g populationSize 0.1 (runState $ randomSchedule tasks) stop
+    let solution =
+            runGA g populationSize 0.1 (runState $ randomSchedule tasks) stop
     putStrLn $ "solution = " ++ show solution
     display' solution
 
   where
-    populationSize = 100
-    stop _ count = count > 20
+    populationSize = 30
+    stop _ count = count > 500
 
 display' :: Schedule -> IO ()
 display' schedule = display window white $ translate dx dy pic
