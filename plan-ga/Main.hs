@@ -60,11 +60,13 @@ instance Chromosome Schedule where
 
     mutation g schedule = (`runState` g) $ do
         i <- randomRS (0, length schedule - 1)
-        d <- randomRS (0, 3 :: Int) <&> \case
-            0 -> -10
-            1 -> -1
-            2 -> 1
-            _ -> 10
+        d <- randomRS (0, 5 :: Int) <&> \case
+            0 -> -100
+            1 -> -10
+            2 -> -1
+            3 -> 1
+            4 -> 10
+            _ -> 100
         pure $ case splitAt i schedule of
             (before, work : after) ->
                 before ++ work{startTime = max 0 $ startTime work + d} : after
@@ -107,7 +109,7 @@ main = do
     -- display' solution0
 
     let solution =
-            runGA g populationSize 0.1 (runState $ randomSchedule tasks) stop
+            runGA g populationSize 0.5 (runState $ randomSchedule tasks) stop
     putStrLn $ "solution = " ++ show solution
     putStrLn $ "min startTime = " ++ show (minimum $ map startTime solution)
     putStrLn $ "max endTime = " ++ show (maximum $ map endTime solution)
@@ -115,7 +117,7 @@ main = do
 
   where
     populationSize = 30
-    stop _ count = count > 500
+    stop _ count = count > 200
 
 display' :: Schedule -> IO ()
 display' schedule = display window white $ translate dx dy pic
