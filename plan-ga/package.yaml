@@ -2,14 +2,19 @@ name: plan-ga
 
 executable:
   main: Main
+  ghc-options: -threaded -rtsopts
 
 dependencies:
   - base
   - containers
   - deepseq
+  - errors
   - gloss
   - lens
   - mtl
   - QuickCheck
   - random
   - simple-genetic-algorithm
+  - transformers
+
+# stack build --trace --exec 'time plan-ga +RTS -p -N'

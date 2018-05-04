@@ -1,137 +1,271 @@
+{-# OPTIONS -Wno-partial-type-signatures #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ParallelListComp #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TupleSections #-}
 
 module Main (main) where
+
+import           Debug.Trace
 
 import           AI.GeneticAlgorithm.Simple
 import           Control.DeepSeq
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.State
-import           Data.List
-import           GHC.Generics
+import           Control.Monad.Trans.Maybe
+import           Data.Foldable
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+import           Data.Maybe
+import           Data.Monoid ((<>))
+import           Data.Set (Set)
+import qualified Data.Set as Set
+import           Data.Traversable
+import           GHC.Generics (Generic)
 import           Graphics.Gloss
-import           System.Random
+import           System.Random (Random, RandomGen, StdGen, newStdGen, random,
+                                randomR)
 
-type Time = Int
+type Time = Float
 
-data Task = Task
-    { duration     :: Time  -- in time units
-    , resourceCost :: Int   -- in resource units
-    }
-    deriving (Eq, Generic, NFData, Ord, Show)
+type WorkId = String
+
+type Resource = Float
 
 data Work = Work
-    { task      :: Task
-    , startTime :: Time
+    { workId       :: WorkId
+    , duration     :: Time
+    , resourceCost :: Resource
+    , chainId      :: ChainId
     }
     deriving (Eq, Generic, NFData, Ord, Show)
 
-endTime :: Work -> Time
-endTime Work{startTime, task = Task{duration}} = startTime + duration
+-- | List of chains
+type Chain = [Work]
+type Chains = [Chain]
 
-type Schedule = [Work]
+type ChainId = Int
+data Step = Wait | Run ChainId
+    deriving (Generic, NFData, Show)
+type Plan = [Step]
 
-randomTask :: State StdGen Task
-randomTask = do
-    duration <- randomRS (1, 100)
-    resourceCost <- randomRS (1, 100)
-    pure Task{..}
+data Env = Env
+    { envChains        :: Chains
+    , envResourceLimit :: Resource
+    }
+    deriving (Generic, NFData)
 
-randomSchedule :: [Task] -> State StdGen Schedule
-randomSchedule = traverse $ \task -> do
-    startTime <- randomRS (1, 1000)
-    pure Work{task, startTime}
+type Schedule = Map Time (Set Work)
 
-instance Chromosome Schedule where
-    crossover g schedule1 schedule2 = ([schedule], g)
-      where
-        schedule =
-            [ Work{startTime = (st1 + st2) `div` 2, task}
-            | Work{startTime = st1, task} <- schedule1
-            | Work{startTime = st2} <- schedule2
-            ]
+randomWork :: WorkId -> ChainId -> State StdGen Work
+randomWork workId chainId = do
+    duration <- randomRS (1, 10)
+    resourceCost <- randomRS (2, 10)
+    pure Work{..}
 
-    mutation g schedule = (`runState` g) $ do
-        i <- randomRS (0, length schedule - 1)
-        d <- randomRS (0, 5 :: Int) <&> \case
-            0 -> -100
-            1 -> -10
-            2 -> -1
-            3 -> 1
-            4 -> 10
-            _ -> 100
-        pure $ case splitAt i schedule of
-            (before, work : after) ->
-                before ++ work{startTime = max 0 $ startTime work + d} : after
-            _ -> error "empty schedule"
+scheduleEndTime :: Schedule -> Time
+scheduleEndTime schedule
+    | null schedule = 0
+    | otherwise     = maximum
+        [ start + duration
+        | (start, works) <- Map.assocs schedule, Work{duration} <- toList works
+        ]
 
-    fitness schedule =
-        1
-        / (1 + fromIntegral timeToStart)
-        / (1 + fromIntegral totalTime)
-        / (1 + fromIntegral intersectionMeasure) ^ (2 :: Int)
-      where
-        timeToStart = minimum (map startTime schedule)
-        totalTime = maximum (map endTime schedule)
-        intersectionMeasure = sum
-            [ max 0 (min end1 end2 - max start1 start2)
-            | workTails <- tails schedule
-            , work1 : workTail <- pure workTails
-            , work2 <- workTail
-            , let start1 = startTime work1
-                  end1   = endTime   work1
-                  start2 = startTime work2
-                  end2   = endTime   work2
-            ]
-
-draw :: Schedule -> Picture
-draw = foldMap drawWork
+randomPlan :: Chains -> State StdGen Plan
+randomPlan chains = case chains of
+    [] -> pure []
+    _  -> do
+        b <- randomRS (False, True)
+        if b then do
+            i <- randomRS (0, chainCount - 1)
+            let (_, chains') = popWork i chains
+            (Run i :) <$> randomPlan chains'
+        else
+            (Wait :) <$> randomPlan chains
   where
-    drawWork Work{task = Task{duration}, startTime} =
-        translate (fromIntegral $ startTime + duration `div` 2) 0
-        . color (makeColor 0 0 1 0.33)
-        $ rectangleSolid (fromIntegral duration) workBlockHeight
+    chainCount = length chains
 
-main :: IO ()
-main = do
-    g <- newStdGen
+popWork :: ChainId -> Chains -> (Work, Chains)
+popWork i chains =
+    case chains !! i of
+        []         -> error "empty chain"
+        [work]     -> (work, take i chains ++         drop (i + 1) chains)
+        work:chain -> (work, take i chains ++ chain : drop (i + 1) chains)
 
-    let tasks = evalState (replicateM 10 randomTask) g
-    putStrLn $ "tasks = " ++ show tasks
-    -- let solution0 = [Work{task, startTime = 0} | task <- tasks]
-    -- display' solution0
+twist :: [a] -> [a] -> [a]
+twist [] ys     = ys
+twist (x:xs) ys = x : twist ys xs
 
-    let solution =
-            runGA g populationSize 0.5 (runState $ randomSchedule tasks) stop
-    putStrLn $ "solution = " ++ show solution
-    putStrLn $ "min startTime = " ++ show (minimum $ map startTime solution)
-    putStrLn $ "max endTime = " ++ show (maximum $ map endTime solution)
-    display' solution
+instance Chromosome (Env, Plan) where
+    crossover g (env, plan1) (_, plan2) =
+        (map (env,) [plan1, plan2, twist plan1 plan2, twist plan2 plan1], g)
+
+    mutation g (env, plan) = (runState ?? g) . fmap (env,) $ do
+        i <- randomRS (0, length plan - 1)
+        d <- randomRS (False, True)
+        if d then do
+            -- insert step
+            b <- randomRS (False, True)
+            step <-
+                if b then
+                    Run <$> state random
+                else
+                    pure Wait
+            pure $ take i plan ++ step : drop i plan
+        else
+            -- remove step
+            pure $ take i plan ++ drop (i + 1) plan
+
+    fitness (env, plan) = case runPlan env plan of
+        Just schedule ->
+            1
+            / realToFrac (scheduleEndTime schedule)
+            / fromIntegral (length plan + 1)
+        Nothing -> 0
+
+runPlan :: Env -> Plan -> Maybe Schedule
+runPlan Env{envChains, envResourceLimit} plan =
+    evalState ?? (envChains, Map.empty, startTime, Map.empty) $ runMaybeT $ do
+        for_ plan go
+        finalize
+        use schedule
 
   where
-    populationSize = 30
-    stop _ count = count > 200
+    chains   :: Lens' _ Chains
+    chains   = _1
+    jobs     :: Lens' _ (Map Time (Set Work))
+    jobs     = _2
+    time     :: Lens' _ Time
+    time     = _3
+    schedule :: Lens' _ Schedule
+    schedule = _4
+
+    startTime = 0 :: Time
+
+    go Wait = do
+        endingJobs <- uses jobs Map.minViewWithKey
+        case endingJobs of
+            Nothing                -> pure ()
+            Just ((end, _), continuingJobs) -> do
+                time .= end
+                jobs .= continuingJobs
+
+    go (Run ch) = do
+        continuingChains <- use chains
+        case continuingChains of
+            [] -> pure ()
+            _  -> do
+                curTime <- use time
+                let endTime = curTime + duration work
+                chains .= continuingChains'
+                schedule .@ curTime <>= Set.singleton work
+                jobs     .@ endTime <>= Set.singleton work
+                checkResources
+              where
+                (work, continuingChains') = popWork i continuingChains
+                i = ch `mod` chainCount
+                chainCount = length continuingChains
+
+    finalize = do
+        chainsLeft <- use chains
+        lastTime   <- use time
+        schedule .@ lastTime <>= Set.fromList (concat chainsLeft)
+        jobs     .@ lastTime <>= Set.fromList (concat chainsLeft)
+        checkResources
+
+    checkResources = do
+        activeJobs <- use jobs
+        let resources = sum
+                [ resourceCost
+                | works <- toList activeJobs
+                , Work{resourceCost} <- toList works
+                ]
+        traceShowM (activeJobs, resources)
+        guard (resources <= envResourceLimit)
+
+-- | 'at' with 'mempty' as default.
+(.@) :: (Ord k, Eq m, Monoid m) => Lens' a (Map k m) -> k -> Lens' a m
+focusMap .@ key = focusMap . at key . non mempty
 
 display' :: Schedule -> IO ()
 display' schedule = display window white $ translate dx dy pic
   where
-    window = InWindow title (width, round height) (0, 0)
-    pic = draw schedule
+    window = InWindow title size (0, 0)
+    (pic, size@(width, _)) = drawSchedule schedule
     title = "Planning with genetic algorithm"
-    height = workBlockHeight
-    width = maximum $ map endTime schedule
     dx = - fromIntegral width / 2
     dy = 0
 
+drawSchedule :: Schedule -> (Picture, (Int, Int))
+drawSchedule schedule =
+    (pic, (round width, round $ workBlockHeight * fromIntegral chainCount))
+  where
+    xscale = 50
+    pic = (`foldMap` Map.assocs schedule) $ \(start, works) -> mconcat
+        [ translate
+            (xscale * (start + duration / 2))
+            (negate $ (fromIntegral chainId - 0.5) * workBlockHeight)
+            (   scale xscale 1
+                    (   color semitransparentBlue (rectangleSolid w h)
+                    <>  rectangleWire duration workBlockHeight
+                    )
+            <>  scale fontSize fontSize (text workId)
+            )
+        | Work{duration, workId, chainId, resourceCost} <- toList works
+        , let
+            w = duration
+            h = workBlockHeight * resourceCost / globalResourceLimit
+        ]
+    width = xscale * scheduleEndTime schedule
+    semitransparentBlue = makeColor 0 0 1 0.33
+    fontSize = 0.1
+    chainCount =
+        1 +
+        maximum
+            [chainId | works <- toList schedule, Work{chainId} <- toList works]
+
 workBlockHeight :: Float
-workBlockHeight = 100
+workBlockHeight = 200
+
+globalResourceLimit :: Resource
+globalResourceLimit = 10
 
 randomRS :: (Random a, RandomGen g) => (a, a) -> State g a
 randomRS = state . randomR
+
+main :: IO ()
+main = do
+    gen <- newStdGen
+
+    let chains =
+            evalState ?? (0 :: Int, gen) $
+            for [0..1] $ \chainId ->
+            replicateM 3 $ do
+                n <- _1 <<+= 1
+                zoom _2 $ randomWork (show n) chainId
+    let env = Env{envChains = chains, envResourceLimit = globalResourceLimit}
+    putStrLn "chains ="
+    for_ chains $ \chain -> do
+        putStr "\t"
+        print chain
+    let newChromosome g = ((env, plan), g') where
+            (plan, g') = runState (randomPlan chains) g
+
+    -- solution
+    let (_, plan) =
+            runGA gen populationSize mutationChance newChromosome stop
+    let schedule = runPlan env plan
+    putStrLn $ "*** plan = " ++ show plan
+    putStrLn $ "*** schedule = " ++ show schedule
+    display' $ fromMaybe (error "invalid plan") schedule
+
+  where
+    mutationChance = 0.5
+    populationSize = 10
+    stop _ count = count > 10

@@ -160,9 +160,8 @@ updateViewWithSearch view searchTerms = do
             "" -> pure True
             _  -> do
                 columns <- QTreeWidgetItem.columnCount item
-                matched <- for [0 .. columns - 1] $ \j -> do
-                    cellText <- QTreeWidgetItem.text item j
-                    pure $ match cellText
+                matched <- for [0 .. columns - 1] $
+                    fmap match . QTreeWidgetItem.text item
                 pure $ or matched
         setHidden item $ not matched
     where match txt = map toLower searchTerms `isInfixOf` map toLower txt
