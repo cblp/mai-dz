@@ -37,9 +37,13 @@ int main(void) {
     FD_ZERO(&active_fd_set);
     FD_SET(server, &active_fd_set);
 
+    struct timeval selectTimeout = {.tv_sec = 20};
+
     for (;;) {
         read_fd_set = active_fd_set;
-        ASSERT_OK(select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0);
+        ASSERT_OK(
+            select(FD_SETSIZE, &read_fd_set, NULL, NULL, &selectTimeout) < 0
+        );
 
         for (int s = 0; s < FD_SETSIZE; ++s) {
             if (FD_ISSET(s, &read_fd_set)) {
