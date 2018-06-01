@@ -8,7 +8,6 @@ executable:
     - FlexibleContexts
     - FlexibleInstances
     - NamedFieldPuns
-    - OverloadedLabels
     - RecordWildCards
     - TupleSections
     - TypeFamilies
@@ -17,7 +16,6 @@ executable:
 
 dependencies:
   - base
-  - bookkeeper
   - containers
   - deepseq
   - gloss

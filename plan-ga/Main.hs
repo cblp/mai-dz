@@ -1,9 +1,8 @@
 import           AI.GeneticAlgorithm.Simple
-import           Bookkeeper
-import           Bookkeeper.Lens ()
 import           Control.DeepSeq
 import           Control.Lens
 import           Control.Monad
+import           Control.Monad.ST
 import           Control.Monad.State
 import           Data.Foldable
 import           Data.Map.Strict (Map)
@@ -11,6 +10,7 @@ import qualified Data.Map.Strict as Map
 import           Data.Monoid
 import           Data.Set (Set)
 import qualified Data.Set as Set
+import           Data.STRef
 import           Data.Traversable
 import           GHC.Generics
 import           Graphics.Gloss
@@ -116,63 +116,61 @@ instance Chromosome (Env, Plan) where
         Env{envResourceLimit} = env
 
 runPlan :: Env -> Plan -> (Schedule, Resource)
-runPlan Env{envChains} plan =
-    evalState ?? start $ do
-        for_ plan go
-        finalize
-        schedule    <- use #schedule
-        maxResource <- use #maxResource
-        pure (schedule, maxResource)
+runPlan Env{envChains} plan = runST $ do
+    chainsR      <- newSTRef envChains
+    jobsR        <- newSTRef Map.empty
+    timeR        <- newSTRef 0
+    scheduleR    <- newSTRef Map.empty
+    maxResourceR <- newSTRef 0
+
+    let checkChainIdle ch =
+            all (\Work{chainId} -> chainId /= ch) . fold <$> readSTRef jobsR
+
+    let checkResources = do
+            jobs <- readSTRef jobsR
+            let resource = sum
+                    [ resourceCost
+                    | works <- toList jobs
+                    , Work{resourceCost} <- toList works
+                    ]
+            modifySTRef maxResourceR (max resource)
+
+    let addAndCheck work@Work{duration} = do
+            time <- readSTRef timeR
+            let end = time + duration
+            modifySTRef scheduleR (atd time %~ Set.insert work)
+            modifySTRef jobsR     (atd end  %~ Set.insert work)
+            checkResources
+
+    let go Wait = do
+            jobs <- readSTRef jobsR
+            case Map.minViewWithKey jobs of
+                Nothing                -> pure ()
+                Just ((end, _), jobs') -> do
+                    writeSTRef timeR end
+                    writeSTRef jobsR jobs'
+
+        go (Run ch) = do
+            chains <- readSTRef chainsR
+            unless (null chains) $ do
+                let (work@Work{chainId}, chains') = popWork ch chains
+                chainIsIdle <- checkChainIdle chainId
+                when chainIsIdle $ do
+                    writeSTRef chainsR chains'
+                    addAndCheck work
+
+    let finalize = do
+            chains <- readSTRef chainsR
+            for_ (concat chains) addAndCheck
+
+    for_ plan go
+    finalize
+    schedule    <- readSTRef scheduleR
+    maxResource <- readSTRef maxResourceR
+    pure (schedule, maxResource)
 
   where
-    start = emptyBook
-        & #chains      =: envChains
-        & #jobs        =: Map.empty
-        & #time        =: 0
-        & #schedule    =: Map.empty
-        & #maxResource =: 0
-
-    go Wait = do
-        jobs <- uses #jobs Map.minViewWithKey
-        case jobs of
-            Nothing                -> pure ()
-            Just ((end, _), jobs') -> do
-                #time .= end
-                #jobs .= jobs'
-
-    go (Run ch) = do
-        chains <- use #chains
-        unless (null chains) $ do
-            let (work@Work{chainId}, chains') = popWork ch chains
-            chainIsIdle <- checkChainIdle chainId
-            when chainIsIdle $ do
-                #chains .= chains'
-                addAndCheck work
-
-    finalize = do
-        chains <- use #chains
-        for_ (concat chains) addAndCheck
-
-    addAndCheck work@Work{duration} = do
-        time <- use #time
-        let end = time + duration
-        #schedule .@ time <>= Set.singleton work
-        #jobs     .@ end  <>= Set.singleton work
-        checkResources
-
-    checkChainIdle ch =
-        uses #jobs (all (\Work{chainId} -> chainId /= ch) . fold)
-
-    checkResources = do
-        jobs <- use #jobs
-        let resource = sum
-                [ resourceCost
-                | works <- toList jobs
-                , Work{resourceCost} <- toList works
-                ]
-        #maxResource %= max resource
-
-    focusMap .@ key = focusMap . at key . non mempty
+    atd key = at key . non mempty
 
 display' :: Schedule -> IO ()
 display' schedule = display window white (translate dx dy pic)
@@ -262,5 +260,5 @@ main = do
   where
     generateRandomChains = False
     mutationChance = 0.5
-    populationSize = 10
+    populationSize = 20
     stop _ count = count > 200
