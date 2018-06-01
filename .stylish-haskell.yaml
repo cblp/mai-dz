@@ -8,3 +8,8 @@ steps:
   - language_pragmas:
       align: false
   - trailing_whitespace: {}
+language_extensions:
+  - NamedFieldPuns
+  - OverloadedLabels
+  - RecordWildCards
+  - TupleSections

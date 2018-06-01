@@ -9,7 +9,6 @@ executable:
     - FlexibleInstances
     - NamedFieldPuns
     - OverloadedLabels
-    - Rank2Types
     - RecordWildCards
     - TupleSections
     - TypeFamilies

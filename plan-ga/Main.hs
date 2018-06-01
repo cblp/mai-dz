@@ -30,13 +30,15 @@ data Work = Work
     }
     deriving (Eq, Generic, NFData, Ord, Show)
 
--- | List of chains
 type Chain = [Work]
+
 type Chains = [Chain]
 
 type ChainId = Int
+
 data Step = Wait | Run ChainId
     deriving (Generic, NFData, Show)
+
 type Plan = [Step]
 
 data Env = Env
@@ -161,11 +163,10 @@ runPlan Env{envChains} plan =
     checkChainIdle ch = do
         jobs <- use #jobs
         pure
-            (null
-                [ ()
+            (and
+                [ chainId == ch
                 | works <- toList jobs
                 , Work{chainId} <- toList works
-                , chainId == ch
                 ])
 
     checkResources = do
@@ -177,9 +178,7 @@ runPlan Env{envChains} plan =
                 ]
         #maxResource %= max resource
 
--- | 'at' with 'mempty' as default.
-(.@) :: (Ord k, Eq m, Monoid m) => Lens' a (Map k m) -> k -> Lens' a m
-focusMap .@ key = focusMap . at key . non mempty
+    focusMap .@ key = focusMap . at key . non mempty
 
 display' :: Schedule -> IO ()
 display' schedule = display window white (translate dx dy pic)
