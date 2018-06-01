@@ -1,19 +1,29 @@
 name: plan-ga
 
 executable:
-  main: Main
+  default-extensions:
+    - AllowAmbiguousTypes
+    - DeriveAnyClass
+    - DeriveGeneric
+    - FlexibleContexts
+    - FlexibleInstances
+    - NamedFieldPuns
+    - OverloadedLabels
+    - Rank2Types
+    - RecordWildCards
+    - TupleSections
+    - TypeFamilies
   ghc-options: -threaded -rtsopts
+  main: Main
 
 dependencies:
   - base
   - bookkeeper
   - containers
   - deepseq
-  - errors
   - gloss
   - lens
   - mtl
-  - QuickCheck
   - random
   - simple-genetic-algorithm
 

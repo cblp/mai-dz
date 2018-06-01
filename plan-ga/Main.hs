@@ -1,19 +1,3 @@
-{-# OPTIONS -Wno-partial-type-signatures #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedLabels #-}
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeFamilies #-}
-
-module Main (main) where
-
 import           AI.GeneticAlgorithm.Simple
 import           Bookkeeper
 import           Bookkeeper.Lens ()
