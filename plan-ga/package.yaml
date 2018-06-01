@@ -6,6 +6,7 @@ executable:
 
 dependencies:
   - base
+  - bookkeeper
   - containers
   - deepseq
   - errors

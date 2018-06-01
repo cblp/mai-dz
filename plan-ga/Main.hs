@@ -1,18 +1,25 @@
 {-# OPTIONS -Wno-partial-type-signatures #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
 
 import           AI.GeneticAlgorithm.Simple
+import           Bookkeeper
+import           Bookkeeper.Lens ()
 import           Control.DeepSeq
-import           Control.Lens
+import           Control.Lens (Lens', at, non, use, uses, zoom, (.=), (<<+=),
+                               (<>=), (??), _1, _2)
 import           Control.Monad
 import           Control.Monad.State
 import           Control.Monad.Trans.Maybe
@@ -95,7 +102,7 @@ popWork ch chains =
     i = ch `mod` length chains
 
 twist :: [a] -> [a] -> [a]
-twist [] ys     = ys
+twist []     ys = ys
 twist (x:xs) ys = x : twist ys xs
 
 instance Chromosome (Env, Plan) where
@@ -124,68 +131,63 @@ instance Chromosome (Env, Plan) where
 
 runPlan :: Env -> Plan -> Maybe Schedule
 runPlan Env{envChains, envResourceLimit} plan =
-    evalState ?? (envChains, Map.empty, startTime, Map.empty) $ runMaybeT $ do
+    evalState ?? start $ runMaybeT $ do
         for_ plan go
         finalize
-        use schedule
+        use #schedule
 
   where
-    chains   :: Lens' _ Chains
-    chains   = _1
-    jobs     :: Lens' _ (Map Time (Set Work))
-    jobs     = _2
-    time     :: Lens' _ Time
-    time     = _3
-    schedule :: Lens' _ Schedule
-    schedule = _4
-
-    startTime = 0 :: Time
+    start = emptyBook
+        & #chains   =: envChains
+        & #jobs     =: Map.empty
+        & #time     =: 0
+        & #schedule =: Map.empty
 
     go Wait = do
-        endingJobs <- uses jobs Map.minViewWithKey
-        case endingJobs of
+        jobs <- uses #jobs Map.minViewWithKey
+        case jobs of
             Nothing                -> pure ()
-            Just ((end, _), continuingJobs) -> do
-                time .= end
-                jobs .= continuingJobs
+            Just ((end, _), jobs') -> do
+                #time .= end
+                #jobs .= jobs'
 
     go (Run ch) = do
-        continuingChains <- use chains
-        case continuingChains of
+        chains <- use #chains
+        case chains of
             [] -> pure ()
             _  -> do
-                chains .= continuingChains'
+                #chains .= chains'
                 addAndCheck work
               where
-                (work, continuingChains') = popWork ch continuingChains
+                (work, chains') = popWork ch chains
 
     finalize = do
-        chainsLeft <- use chains
-        for_ (concat chainsLeft) addAndCheck
+        chains <- use #chains
+        for_ (concat chains) addAndCheck
 
     addAndCheck work@Work{duration, chainId} = do
         checkChainIdle chainId
-        curTime <- use time
-        let endTime = curTime + duration
-        schedule .@ curTime <>= Set.singleton work
-        jobs     .@ endTime <>= Set.singleton work
+        time <- use #time
+        let end = time + duration
+        #schedule .@ time <>= Set.singleton work
+        #jobs     .@ end  <>= Set.singleton work
         checkResources
 
     checkChainIdle ch = do
-        activeJobs <- use jobs
+        jobs <- use #jobs
         guard
             (null
                 [ ()
-                | works <- toList activeJobs
+                | works <- toList jobs
                 , Work{chainId} <- toList works
                 , chainId == ch
                 ])
 
     checkResources = do
-        activeJobs <- use jobs
+        jobs <- use #jobs
         let resources = sum
                 [ resourceCost
-                | works <- toList activeJobs
+                | works <- toList jobs
                 , Work{resourceCost} <- toList works
                 ]
         guard (resources <= envResourceLimit)
