@@ -20,14 +20,13 @@ import           Data.Foldable
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
-import           Data.Monoid ((<>))
+import           Data.Monoid
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Traversable
-import           GHC.Generics (Generic)
+import           GHC.Generics
 import           Graphics.Gloss
-import           System.Random (Random, RandomGen, StdGen, newStdGen, random,
-                                randomR)
+import           System.Random
 
 type Time = Float
 
@@ -242,11 +241,17 @@ main = do
     gen <- newStdGen
 
     let chains =
-            evalState ?? (0 :: Int, gen) $
-            for [0..1] $ \chainId ->
-            replicateM 3 $ do
-                n <- _1 <<+= 1
-                zoom _2 (randomWork (show n) chainId)
+            if generateRandomChains then
+                evalState ?? (0 :: Int, gen) $
+                for [0..1] $ \chainId ->
+                replicateM 3 $ do
+                    n <- _1 <<+= 1
+                    zoom _2 (randomWork (show n) chainId)
+            else
+                [ [Work "1" 3 2 0, Work "3" 2 4 0, Work "5" 1 3 0]
+                , [Work "2" 4 3 1, Work "4" 2 4 1, Work "6" 4 2 1]
+                ]
+
     let env = Env{envChains = chains, envResourceLimit = globalResourceLimit}
     putStrLn "chains ="
     for_ chains $ \chain -> do
@@ -264,6 +269,7 @@ main = do
     display' (fromMaybe (error "invalid plan") schedule)
 
   where
+    generateRandomChains = False
     mutationChance = 0.5
     populationSize = 10
     stop _ count = count > 10
