@@ -79,20 +79,20 @@ randomPlan chains = case chains of
     _  -> do
         b <- randomRS (False, True)
         if b then do
-            i <- randomRS (0, chainCount - 1)
+            i <- randomS
             let (_, chains') = popWork i chains
             (Run i :) <$> randomPlan chains'
         else
             (Wait :) <$> randomPlan chains
-  where
-    chainCount = length chains
 
-popWork :: ChainId -> Chains -> (Work, Chains)
-popWork i chains =
+popWork :: Int -> Chains -> (Work, Chains)
+popWork ch chains =
     case chains !! i of
         []         -> error "empty chain"
         [work]     -> (work, take i chains ++         drop (i + 1) chains)
         work:chain -> (work, take i chains ++ chain : drop (i + 1) chains)
+  where
+    i = ch `mod` length chains
 
 twist :: [a] -> [a] -> [a]
 twist [] ys     = ys
@@ -108,11 +108,7 @@ instance Chromosome (Env, Plan) where
         if d then do
             -- insert step
             b <- randomRS (False, True)
-            step <-
-                if b then
-                    Run <$> state random
-                else
-                    pure Wait
+            step <- if b then Run <$> randomS else pure Wait
             pure (take i plan ++ step : drop i plan)
         else
             -- remove step
@@ -123,7 +119,8 @@ instance Chromosome (Env, Plan) where
             1
             / realToFrac (scheduleEndTime schedule)
             / fromIntegral (length plan + 1)
-        Nothing -> 0
+        Nothing ->
+            - fromIntegral (length plan + 1)
 
 runPlan :: Env -> Plan -> Maybe Schedule
 runPlan Env{envChains, envResourceLimit} plan =
@@ -160,9 +157,7 @@ runPlan Env{envChains, envResourceLimit} plan =
                 chains .= continuingChains'
                 addAndCheck work
               where
-                (work, continuingChains') = popWork i continuingChains
-                i = ch `mod` chainCount
-                chainCount = length continuingChains
+                (work, continuingChains') = popWork ch continuingChains
 
     finalize = do
         chainsLeft <- use chains
@@ -244,6 +239,9 @@ globalResourceLimit = 4
 xscale :: Float
 xscale = 40
 
+randomS :: (Random a, RandomGen g) => State g a
+randomS = state random
+
 randomRS :: (Random a, RandomGen g) => (a, a) -> State g a
 randomRS = state . randomR
 
@@ -282,5 +280,5 @@ main = do
   where
     generateRandomChains = False
     mutationChance = 0.5
-    populationSize = 20
+    populationSize = 10
     stop _ count = count > 200
