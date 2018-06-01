@@ -160,14 +160,8 @@ runPlan Env{envChains} plan =
         #jobs     .@ end  <>= Set.singleton work
         checkResources
 
-    checkChainIdle ch = do
-        jobs <- use #jobs
-        pure
-            (and
-                [ chainId /= ch
-                | works <- toList jobs
-                , Work{chainId} <- toList works
-                ])
+    checkChainIdle ch =
+        uses #jobs (all (\Work{chainId} -> chainId /= ch) . fold)
 
     checkResources = do
         jobs <- use #jobs
