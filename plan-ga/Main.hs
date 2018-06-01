@@ -164,7 +164,7 @@ runPlan Env{envChains} plan =
         jobs <- use #jobs
         pure
             (and
-                [ chainId == ch
+                [ chainId /= ch
                 | works <- toList jobs
                 , Work{chainId} <- toList works
                 ])
