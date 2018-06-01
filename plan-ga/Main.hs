@@ -1,7 +1,6 @@
 {-# OPTIONS -Wno-partial-type-signatures #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -10,8 +9,6 @@
 {-# LANGUAGE TupleSections #-}
 
 module Main (main) where
-
-import           Debug.Trace
 
 import           AI.GeneticAlgorithm.Simple
 import           Control.DeepSeq
@@ -117,10 +114,10 @@ instance Chromosome (Env, Plan) where
                     Run <$> state random
                 else
                     pure Wait
-            pure $ take i plan ++ step : drop i plan
+            pure (take i plan ++ step : drop i plan)
         else
             -- remove step
-            pure $ take i plan ++ drop (i + 1) plan
+            pure (take i plan ++ drop (i + 1) plan)
 
     fitness (env, plan) = case runPlan env plan of
         Just schedule ->
@@ -186,7 +183,6 @@ runPlan Env{envChains, envResourceLimit} plan =
                 | works <- toList activeJobs
                 , Work{resourceCost} <- toList works
                 ]
-        traceShowM (activeJobs, resources)
         guard (resources <= envResourceLimit)
 
 -- | 'at' with 'mempty' as default.
@@ -194,7 +190,7 @@ runPlan Env{envChains, envResourceLimit} plan =
 focusMap .@ key = focusMap . at key . non mempty
 
 display' :: Schedule -> IO ()
-display' schedule = display window white $ translate dx dy pic
+display' schedule = display window white (translate dx dy pic)
   where
     window = InWindow title size (0, 0)
     (pic, size@(width, _)) = drawSchedule schedule
@@ -204,13 +200,12 @@ display' schedule = display window white $ translate dx dy pic
 
 drawSchedule :: Schedule -> (Picture, (Int, Int))
 drawSchedule schedule =
-    (pic, (round width, round $ workBlockHeight * fromIntegral chainCount))
+    (pic, (round width, round (workBlockHeight * fromIntegral chainCount)))
   where
-    xscale = 50
     pic = (`foldMap` Map.assocs schedule) $ \(start, works) -> mconcat
         [ translate
             (xscale * (start + duration / 2))
-            (negate $ (fromIntegral chainId - 0.5) * workBlockHeight)
+            (- (fromIntegral chainId - 0.5) * workBlockHeight)
             (   scale xscale 1
                     (   color semitransparentBlue (rectangleSolid w h)
                     <>  rectangleWire duration workBlockHeight
@@ -236,6 +231,9 @@ workBlockHeight = 200
 globalResourceLimit :: Resource
 globalResourceLimit = 10
 
+xscale :: Float
+xscale = 40
+
 randomRS :: (Random a, RandomGen g) => (a, a) -> State g a
 randomRS = state . randomR
 
@@ -248,7 +246,7 @@ main = do
             for [0..1] $ \chainId ->
             replicateM 3 $ do
                 n <- _1 <<+= 1
-                zoom _2 $ randomWork (show n) chainId
+                zoom _2 (randomWork (show n) chainId)
     let env = Env{envChains = chains, envResourceLimit = globalResourceLimit}
     putStrLn "chains ="
     for_ chains $ \chain -> do
@@ -261,9 +259,9 @@ main = do
     let (_, plan) =
             runGA gen populationSize mutationChance newChromosome stop
     let schedule = runPlan env plan
-    putStrLn $ "*** plan = " ++ show plan
-    putStrLn $ "*** schedule = " ++ show schedule
-    display' $ fromMaybe (error "invalid plan") schedule
+    putStrLn ("*** plan = " ++ show plan)
+    putStrLn ("*** schedule = " ++ show schedule)
+    display' (fromMaybe (error "invalid plan") schedule)
 
   where
     mutationChance = 0.5
