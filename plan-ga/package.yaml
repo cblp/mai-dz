@@ -16,6 +16,5 @@ dependencies:
   - QuickCheck
   - random
   - simple-genetic-algorithm
-  - transformers
 
 # stack build --trace --exec 'time plan-ga +RTS -p -N'

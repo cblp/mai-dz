@@ -18,15 +18,12 @@ import           AI.GeneticAlgorithm.Simple
 import           Bookkeeper
 import           Bookkeeper.Lens ()
 import           Control.DeepSeq
-import           Control.Lens (Lens', at, non, use, uses, zoom, (.=), (<<+=),
-                               (<>=), (??), _1, _2)
+import           Control.Lens
 import           Control.Monad
 import           Control.Monad.State
-import           Control.Monad.Trans.Maybe
 import           Data.Foldable
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe
 import           Data.Monoid
 import           Data.Set (Set)
 import qualified Data.Set as Set
@@ -121,27 +118,33 @@ instance Chromosome (Env, Plan) where
             -- remove step
             pure (take i plan ++ drop (i + 1) plan)
 
-    fitness (env, plan) = case runPlan env plan of
-        Just schedule ->
+    fitness (env, plan)
+        | maxResourceCost <= envResourceLimit =
             1
             / realToFrac (scheduleEndTime schedule)
             / fromIntegral (length plan + 1)
-        Nothing ->
-            - fromIntegral (length plan + 1)
+        | otherwise =
+            - fromIntegral (length plan + 1) * realToFrac maxResourceCost
+      where
+        (schedule, maxResourceCost) = runPlan env plan
+        Env{envResourceLimit} = env
 
-runPlan :: Env -> Plan -> Maybe Schedule
-runPlan Env{envChains, envResourceLimit} plan =
-    evalState ?? start $ runMaybeT $ do
+runPlan :: Env -> Plan -> (Schedule, Resource)
+runPlan Env{envChains} plan =
+    evalState ?? start $ do
         for_ plan go
         finalize
-        use #schedule
+        schedule    <- use #schedule
+        maxResource <- use #maxResource
+        pure (schedule, maxResource)
 
   where
     start = emptyBook
-        & #chains   =: envChains
-        & #jobs     =: Map.empty
-        & #time     =: 0
-        & #schedule =: Map.empty
+        & #chains      =: envChains
+        & #jobs        =: Map.empty
+        & #time        =: 0
+        & #schedule    =: Map.empty
+        & #maxResource =: 0
 
     go Wait = do
         jobs <- uses #jobs Map.minViewWithKey
@@ -153,20 +156,18 @@ runPlan Env{envChains, envResourceLimit} plan =
 
     go (Run ch) = do
         chains <- use #chains
-        case chains of
-            [] -> pure ()
-            _  -> do
+        unless (null chains) $ do
+            let (work@Work{chainId}, chains') = popWork ch chains
+            chainIsIdle <- checkChainIdle chainId
+            when chainIsIdle $ do
                 #chains .= chains'
                 addAndCheck work
-              where
-                (work, chains') = popWork ch chains
 
     finalize = do
         chains <- use #chains
         for_ (concat chains) addAndCheck
 
-    addAndCheck work@Work{duration, chainId} = do
-        checkChainIdle chainId
+    addAndCheck work@Work{duration} = do
         time <- use #time
         let end = time + duration
         #schedule .@ time <>= Set.singleton work
@@ -175,7 +176,7 @@ runPlan Env{envChains, envResourceLimit} plan =
 
     checkChainIdle ch = do
         jobs <- use #jobs
-        guard
+        pure
             (null
                 [ ()
                 | works <- toList jobs
@@ -185,12 +186,12 @@ runPlan Env{envChains, envResourceLimit} plan =
 
     checkResources = do
         jobs <- use #jobs
-        let resources = sum
+        let resource = sum
                 [ resourceCost
                 | works <- toList jobs
                 , Work{resourceCost} <- toList works
                 ]
-        guard (resources <= envResourceLimit)
+        #maxResource %= max resource
 
 -- | 'at' with 'mempty' as default.
 (.@) :: (Ord k, Eq m, Monoid m) => Lens' a (Map k m) -> k -> Lens' a m
@@ -274,10 +275,12 @@ main = do
     -- solution
     let (_, plan) =
             runGA gen populationSize mutationChance newChromosome stop
-    let schedule = runPlan env plan
+    let (schedule, maxResource) = runPlan env plan
     putStrLn ("*** plan = " ++ show plan)
     putStrLn ("*** schedule = " ++ show schedule)
-    display' (fromMaybe (error "invalid plan") schedule)
+    putStrLn ("*** maxResource = " ++ show maxResource)
+    putStrLn ("*** scheduleEndTime = " ++ show (scheduleEndTime schedule))
+    display' schedule
 
   where
     generateRandomChains = False
