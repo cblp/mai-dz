@@ -62,7 +62,7 @@ type Schedule = Map Time (Set Work)
 randomWork :: WorkId -> ChainId -> State StdGen Work
 randomWork workId chainId = do
     duration <- randomRS (1, 10)
-    resourceCost <- randomRS (2, 10)
+    resourceCost <- randomRS (1, 4)
     pure Work{..}
 
 scheduleEndTime :: Schedule -> Time
@@ -157,12 +157,8 @@ runPlan Env{envChains, envResourceLimit} plan =
         case continuingChains of
             [] -> pure ()
             _  -> do
-                curTime <- use time
-                let endTime = curTime + duration work
                 chains .= continuingChains'
-                schedule .@ curTime <>= Set.singleton work
-                jobs     .@ endTime <>= Set.singleton work
-                checkResources
+                addAndCheck work
               where
                 (work, continuingChains') = popWork i continuingChains
                 i = ch `mod` chainCount
@@ -170,10 +166,25 @@ runPlan Env{envChains, envResourceLimit} plan =
 
     finalize = do
         chainsLeft <- use chains
-        lastTime   <- use time
-        schedule .@ lastTime <>= Set.fromList (concat chainsLeft)
-        jobs     .@ lastTime <>= Set.fromList (concat chainsLeft)
+        for_ (concat chainsLeft) addAndCheck
+
+    addAndCheck work@Work{duration, chainId} = do
+        checkChainIdle chainId
+        curTime <- use time
+        let endTime = curTime + duration
+        schedule .@ curTime <>= Set.singleton work
+        jobs     .@ endTime <>= Set.singleton work
         checkResources
+
+    checkChainIdle ch = do
+        activeJobs <- use jobs
+        guard
+            (null
+                [ ()
+                | works <- toList activeJobs
+                , Work{chainId} <- toList works
+                , chainId == ch
+                ])
 
     checkResources = do
         activeJobs <- use jobs
@@ -206,7 +217,7 @@ drawSchedule schedule =
             (xscale * (start + duration / 2))
             (- (fromIntegral chainId - 0.5) * workBlockHeight)
             (   scale xscale 1
-                    (   color semitransparentBlue (rectangleSolid w h)
+                    (   color translucentBlue (rectangleSolid w h)
                     <>  rectangleWire duration workBlockHeight
                     )
             <>  scale fontSize fontSize (text workId)
@@ -217,7 +228,7 @@ drawSchedule schedule =
             h = workBlockHeight * resourceCost / globalResourceLimit
         ]
     width = xscale * scheduleEndTime schedule
-    semitransparentBlue = makeColor 0 0 1 0.33
+    translucentBlue = makeColor 0 0 1 0.33
     fontSize = 0.1
     chainCount =
         1 +
@@ -228,7 +239,7 @@ workBlockHeight :: Float
 workBlockHeight = 200
 
 globalResourceLimit :: Resource
-globalResourceLimit = 10
+globalResourceLimit = 4
 
 xscale :: Float
 xscale = 40
@@ -271,5 +282,5 @@ main = do
   where
     generateRandomChains = False
     mutationChance = 0.5
-    populationSize = 10
-    stop _ count = count > 10
+    populationSize = 20
+    stop _ count = count > 200
