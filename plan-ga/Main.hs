@@ -1,16 +1,18 @@
+import           Prelude hiding (read)
+
 import           AI.GeneticAlgorithm.Simple
 import           Control.DeepSeq
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.ST
-import           Control.Monad.State
+import           Control.Monad.State.Strict
 import           Data.Foldable
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Monoid
 import           Data.Set (Set)
 import qualified Data.Set as Set
-import           Data.STRef
+import           Data.STRef.Extra
 import           Data.Traversable
 import           GHC.Generics
 import           Graphics.Gloss
@@ -117,56 +119,56 @@ instance Chromosome (Env, Plan) where
 
 runPlan :: Env -> Plan -> (Schedule, Resource)
 runPlan Env{envChains} plan = runST $ do
-    chainsR      <- newSTRef envChains
-    jobsR        <- newSTRef Map.empty
-    timeR        <- newSTRef 0
-    scheduleR    <- newSTRef Map.empty
-    maxResourceR <- newSTRef 0
+    chainsR      <- new envChains
+    jobsR        <- new Map.empty
+    timeR        <- new 0
+    scheduleR    <- new Map.empty
+    maxResourceR <- new 0
 
     let checkChainIdle ch =
-            all (\Work{chainId} -> chainId /= ch) . fold <$> readSTRef jobsR
+            all (\Work{chainId} -> chainId /= ch) . fold <$> read jobsR
 
     let checkResources = do
-            jobs <- readSTRef jobsR
+            jobs <- read jobsR
             let resource = sum
                     [ resourceCost
                     | works <- toList jobs
                     , Work{resourceCost} <- toList works
                     ]
-            modifySTRef maxResourceR (max resource)
+            maxResourceR $~ max resource
 
     let addAndCheck work@Work{duration} = do
-            time <- readSTRef timeR
+            time <- read timeR
             let end = time + duration
-            modifySTRef scheduleR (atd time %~ Set.insert work)
-            modifySTRef jobsR     (atd end  %~ Set.insert work)
+            scheduleR $~ atd time %~ Set.insert work
+            jobsR     $~ atd end  %~ Set.insert work
             checkResources
 
     let go Wait = do
-            jobs <- readSTRef jobsR
+            jobs <- read jobsR
             case Map.minViewWithKey jobs of
                 Nothing                -> pure ()
                 Just ((end, _), jobs') -> do
-                    writeSTRef timeR end
-                    writeSTRef jobsR jobs'
+                    timeR $= end
+                    jobsR $= jobs'
 
         go (Run ch) = do
-            chains <- readSTRef chainsR
+            chains <- read chainsR
             unless (null chains) $ do
                 let (work@Work{chainId}, chains') = popWork ch chains
                 chainIsIdle <- checkChainIdle chainId
                 when chainIsIdle $ do
-                    writeSTRef chainsR chains'
+                    chainsR $= chains'
                     addAndCheck work
 
     let finalize = do
-            chains <- readSTRef chainsR
+            chains <- read chainsR
             for_ (concat chains) addAndCheck
 
     for_ plan go
     finalize
-    schedule    <- readSTRef scheduleR
-    maxResource <- readSTRef maxResourceR
+    schedule    <- read scheduleR
+    maxResource <- read maxResourceR
     pure (schedule, maxResource)
 
   where
@@ -185,10 +187,12 @@ drawSchedule :: Schedule -> (Picture, (Int, Int))
 drawSchedule schedule =
     (pic, (round width, round (workBlockHeight * fromIntegral chainCount)))
   where
-    pic = (`foldMap` Map.assocs schedule) $ \(start, works) -> mconcat
+    pic = foldMap ?? Map.assocs schedule $ \(start, works) -> mconcat
         [ translate
             (xscale * (start + duration / 2))
-            (- (fromIntegral chainId - 0.5) * workBlockHeight)
+            (   - (fromIntegral chainId - fromIntegral maxChainId / 2)
+            *   workBlockHeight
+            )
             (   scale xscale 1
                     (   color translucentBlue (rectangleSolid w h)
                     <>  rectangleWire duration workBlockHeight
@@ -203,10 +207,10 @@ drawSchedule schedule =
     width = xscale * scheduleEndTime schedule
     translucentBlue = makeColor 0 0 1 0.33
     fontSize = 0.1
-    chainCount =
-        1 +
+    maxChainId =
         maximum
             [chainId | works <- toList schedule, Work{chainId} <- toList works]
+    chainCount = 1 + maxChainId
 
 workBlockHeight :: Float
 workBlockHeight = 200
@@ -215,7 +219,7 @@ globalResourceLimit :: Resource
 globalResourceLimit = 4
 
 xscale :: Float
-xscale = 40
+xscale = 30
 
 randomS :: (Random a, RandomGen g) => State g a
 randomS = state random

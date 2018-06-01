@@ -2,7 +2,6 @@ name: plan-ga
 
 executable:
   default-extensions:
-    - AllowAmbiguousTypes
     - DeriveAnyClass
     - DeriveGeneric
     - FlexibleContexts
@@ -10,9 +9,10 @@ executable:
     - NamedFieldPuns
     - RecordWildCards
     - TupleSections
-    - TypeFamilies
   ghc-options: -threaded -rtsopts
   main: Main
+  other-modules:
+    - Data.STRef.Extra
 
 dependencies:
   - base
