@@ -25,10 +25,10 @@ type WorkId = String
 type Resource = Float
 
 data Work = Work
-    { workId       :: WorkId
-    , duration     :: Time
-    , resourceCost :: Resource
-    , chainId      :: ChainId
+    { workId       :: WorkId   -- уникальный идентификатор
+    , duration     :: Time     -- продолжительность
+    , resourceCost :: Resource -- затраты ресурса
+    , chainId      :: ChainId  -- идентификатор цепочки
     }
     deriving (Eq, Generic, NFData, Ord, Show)
 
@@ -38,7 +38,9 @@ type Chains = [Chain]
 
 type ChainId = Int
 
-data Step = Wait | Run ChainId
+data Step
+    = Wait        -- подождать завершения хотя бы одной работы
+    | Run ChainId -- начать очередную работу из цепочки с указанным номером
     deriving (Generic, NFData, Show)
 
 type Plan = [Step]
@@ -62,7 +64,8 @@ scheduleEndTime schedule
     | null schedule = 0
     | otherwise     = maximum
         [ start + duration
-        | (start, works) <- Map.assocs schedule, Work{duration} <- toList works
+        | (start, works) <- Map.assocs schedule
+        , Work{duration} <- toList works
         ]
 
 randomPlan :: Chains -> State StdGen Plan
