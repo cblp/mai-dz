@@ -2,5 +2,9 @@
     <qresource prefix="/">
         <file>main.qml</file>
         <file>Room.qml</file>
+        <file>bulb_off.png</file>
+        <file>bulb_on.png</file>
+        <file>socket_off.png</file>
+        <file>socket_on.png</file>
     </qresource>
 </RCC>
