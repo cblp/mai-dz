@@ -9,6 +9,7 @@ ApplicationWindow {
     title: qsTr("SCADA 1")
 
     GridLayout {
+        id: scene
         anchors.fill: parent
         columns: 2
 
@@ -24,6 +25,8 @@ ApplicationWindow {
             id: room3
         }
 
+        property var rooms: [room1, room2, room3];
+
         Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
@@ -32,21 +35,18 @@ ApplicationWindow {
                 Button {
                     text: "Выключить весь свет"
                     onClicked: {
-                        room1.light = false;
-                        room2.light = false;
-                        room3.light = false;
+                        for (var r in scene.rooms)
+                            scene.rooms[r].light = false;
                     }
                 }
 
                 Button {
                     text: "Выключить всё электричество"
                     onClicked: {
-                        room1.light = false;
-                        room2.light = false;
-                        room3.light = false;
-                        room1.socket = false;
-                        room2.socket = false;
-                        room3.socket = false;
+                        for (var r in scene.rooms) {
+                            scene.rooms[r].light = false;
+                            scene.rooms[r].socket = false;
+                        }
                     }
                 }
             }
