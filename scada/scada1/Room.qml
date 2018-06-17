@@ -1,4 +1,5 @@
 import QtQuick 2.0
+import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.11
 
 Rectangle {
@@ -9,10 +10,23 @@ Rectangle {
     Layout.fillHeight: true
     Layout.fillWidth: true
 
-    RowLayout {
+    GridLayout {
+        flow: GridLayout.TopToBottom
+        rows: 2
+
+        property bool light: false
+
         Image {
             Layout.margins: 10
-            source: "bulb_off.png"
+            Layout.preferredHeight: 129
+            Layout.preferredWidth: 83
+            source: parent.light ? "bulb_on.png" : "bulb_off.png"
+        }
+
+        Button {
+            Layout.margins: 10
+            text: "Свет"
+            onClicked: parent.light = !parent.light;
         }
 
         Image {
