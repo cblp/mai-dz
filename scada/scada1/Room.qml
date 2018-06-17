@@ -3,6 +3,8 @@ import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.11
 
 Rectangle {
+    id: room
+
     border {
         color: "gray"
         width: 10
@@ -21,13 +23,13 @@ Rectangle {
             Layout.margins: 10
             Layout.preferredHeight: 129
             Layout.preferredWidth: 83
-            source: parent.parent.light ? "bulb_on.png" : "bulb_off.png"
+            source: room.light ? "bulb_on.png" : "bulb_off.png"
         }
 
         Button {
             Layout.margins: 10
             text: "Свет"
-            onClicked: parent.parent.light = !parent.parent.light;
+            onClicked: room.light = !room.light;
         }
 
         Image {
