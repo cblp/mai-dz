@@ -10,28 +10,35 @@ Rectangle {
     Layout.fillHeight: true
     Layout.fillWidth: true
 
+    property bool light: false
+    property bool socket: true
+
     GridLayout {
         flow: GridLayout.TopToBottom
         rows: 2
-
-        property bool light: false
 
         Image {
             Layout.margins: 10
             Layout.preferredHeight: 129
             Layout.preferredWidth: 83
-            source: parent.light ? "bulb_on.png" : "bulb_off.png"
+            source: parent.parent.light ? "bulb_on.png" : "bulb_off.png"
         }
 
         Button {
             Layout.margins: 10
             text: "Свет"
-            onClicked: parent.light = !parent.light;
+            onClicked: parent.parent.light = !parent.parent.light;
         }
 
         Image {
             Layout.margins: 10
-            source: "socket_off.png"
+            source: parent.parent.socket ? "socket_on.png" : "socket_off.png"
+        }
+
+        Button {
+            Layout.margins: 10
+            text: "Розетка"
+            onClicked: parent.parent.socket = !parent.parent.socket;
         }
 
         Rectangle {
