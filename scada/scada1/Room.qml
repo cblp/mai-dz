@@ -1,5 +1,5 @@
-import QtQuick 2.0
-import QtQuick.Controls 2.2
+import QtQuick 2.11
+import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.11
 
 Rectangle {
@@ -14,6 +14,7 @@ Rectangle {
 
     property bool light: false
     property bool socket: true
+    property bool motion: false
 
     GridLayout {
         flow: GridLayout.TopToBottom
@@ -23,7 +24,7 @@ Rectangle {
             Layout.margins: 10
             Layout.preferredHeight: 129
             Layout.preferredWidth: 83
-            source: room.light ? "bulb_on.png" : "bulb_off.png"
+            source: room.light || room.motion ? "bulb_on.png" : "bulb_off.png"
         }
 
         Button {
@@ -34,24 +35,44 @@ Rectangle {
 
         Image {
             Layout.margins: 10
-            source: parent.parent.socket ? "socket_on.png" : "socket_off.png"
+            source: room.socket ? "socket_on.png" : "socket_off.png"
         }
 
         Button {
             Layout.margins: 10
             text: "Розетка"
-            onClicked: parent.parent.socket = !parent.parent.socket;
+            onClicked: room.socket = !room.socket;
         }
 
-        Rectangle {
-            border.color: "black"
+        MouseArea {
             height: 100
             width: 100
+            hoverEnabled: true
 
             Text {
-                text: "⚫️" // 🔴
+                text: room.motion ? "🔴" : "⚫️"
                 x: 40
                 y: 30
+            }
+
+            Timer {
+                interval: 200
+                running: true
+                repeat: true
+
+                property int timeout: 0
+
+                onTriggered: {
+                    if (parent.containsMouse) {
+                        timeout = 10;
+                        room.motion = true;
+                    } else {
+                        if (timeout > 0)
+                            --timeout;
+                        else
+                            room.motion = false;
+                    }
+                }
             }
         }
     }
