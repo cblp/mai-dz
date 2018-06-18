@@ -6,7 +6,7 @@ ApplicationWindow {
     visible: true
     width: 800
     height: 600
-    title: qsTr("SCADA 1")
+    title: "SCADA 1"
 
     GridLayout {
         id: scene
