@@ -42,14 +42,14 @@ ApplicationWindow {
     ArrowButton {
         color: "green"
         x: 350; y: 400
-        onClicked: tryEnterB()
+        onClicked: tryEnter2(roomB)
     }
 
     ArrowButton {
         color: "red"
         x: 460; y: 415
         rotation: 180
-        onClicked: tryExitB()
+        onClicked: tryExit2(roomB)
     }
 
 
@@ -65,14 +65,14 @@ ApplicationWindow {
         color: "green"
         x: 220; y: 295
         rotation: -90
-        onClicked: tryEnterC()
+        onClicked: tryEnter2(roomC)
     }
 
     ArrowButton {
         color: "red"
         x: 235; y: 185
         rotation: 90
-        onClicked: tryExitC()
+        onClicked: tryExit2(roomC)
     }
 
 
@@ -88,23 +88,13 @@ ApplicationWindow {
             roomA.entered = false;
     }
 
-    function tryEnterB() {
+    function tryEnter2(room) {
         if (roomA.entered && !roomB.entered && !roomC.entered)
-            roomB.entered = true;
+            room.entered = true;
     }
 
-    function tryExitB() {
-        if (roomB.entered)
-            roomB.entered = false;
-    }
-
-    function tryEnterC() {
-        if (roomA.entered && !roomB.entered && !roomC.entered)
-            roomC.entered = true;
-    }
-
-    function tryExitC() {
-        if (roomC.entered)
-            roomC.entered = false;
+    function tryExit2(room) {
+        if (room.entered)
+            room.entered = false;
     }
 }
