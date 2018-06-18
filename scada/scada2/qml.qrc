@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Room.qml</file>
+        <file>ArrowButton.qml</file>
+    </qresource>
+</RCC>
