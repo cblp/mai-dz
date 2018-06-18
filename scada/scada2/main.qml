@@ -8,7 +8,8 @@ ApplicationWindow {
     height: 600
     title: qsTr("SCADA 2")
 
-    // Room A //
+
+    // Room A //////////////////////////////////////////////////////////////////
 
     Room {
         id: roomA
@@ -23,11 +24,12 @@ ApplicationWindow {
 
     ArrowButton {
         color: "green"
-        x: 110; y: 400
+        x: 110; y: 415
         rotation: 180
     }
 
-    // Room B //
+
+    // Room B //////////////////////////////////////////////////////////////////
 
     Room {
         id: roomB
@@ -42,11 +44,12 @@ ApplicationWindow {
 
     ArrowButton {
         color: "green"
-        x: 460; y: 400
+        x: 460; y: 415
         rotation: 180
     }
 
-    // Room C //
+
+    // Room C //////////////////////////////////////////////////////////////////
 
     Room {
         id: roomC
@@ -56,13 +59,13 @@ ApplicationWindow {
 
     ArrowButton {
         color: "red"
-        x: 230; y: 285
+        x: 220; y: 295
         rotation: -90
     }
 
     ArrowButton {
         color: "green"
-        x: 230; y: 175
+        x: 235; y: 185
         rotation: 90
     }
 }
