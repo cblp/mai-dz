@@ -1,0 +1,3 @@
+ArrowButton {
+    color: "red"
+}

@@ -4,5 +4,7 @@
         <file>Room.qml</file>
         <file>ArrowButton.qml</file>
         <file>Door.qml</file>
+        <file>EnterButton.qml</file>
+        <file>ExitButton.qml</file>
     </qresource>
 </RCC>
