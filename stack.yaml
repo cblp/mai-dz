@@ -1,4 +1,4 @@
-resolver: lts-11.10
+resolver: lts-12.10
 
 packages:
   # old
@@ -13,3 +13,15 @@ extra-deps:
   # plan-ga:
   #   - git: https://github.com/afiskon/simple-genetic-algorithm.git
   #     commit: 5c4542351b8e0ac1b10ff9206277ca7de2484338
+
+  # rectangle:
+  - qtah-qt5-0.5.1
+
+  # qtah-qt5:
+  - hoppy-runtime-0.5.1
+  - qtah-cpp-qt5-0.5.1
+  - qtah-generator-0.5.0
+
+  # qtah-generator
+  - hoppy-generator-0.5.2
+  - hoppy-std-0.5.0

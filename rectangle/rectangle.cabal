@@ -1,9 +1,17 @@
+cabal-version: 2.2
 name: rectangle
 version: 2018.11
-
 build-type: Simple
-cabal-version: >= 1.2
 
 executable rectangle-cli
-    build-depends: base
+    build-depends:
+        base,
     main-is: Cli.hs
+
+executable rectangle-gui
+    build-depends:
+        base,
+        hoppy-runtime,
+        qtah-qt5,
+    ghc-options: -dynamic
+    main-is: Gui.hs
