@@ -1,14 +1,14 @@
-import           Foreign.Hoppy.Runtime (withScopedPtr)
-import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
-import           Graphics.UI.Qtah.Signal (connect_)
-import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
-import qualified Graphics.UI.Qtah.Widgets.QDoubleSpinBox as QDoubleSpinBox
-import qualified Graphics.UI.Qtah.Widgets.QFormLayout as QFormLayout
-import qualified Graphics.UI.Qtah.Widgets.QFrame as QFrame
-import qualified Graphics.UI.Qtah.Widgets.QLabel as QLabel
+import           Foreign.Hoppy.Runtime
+import           Graphics.UI.Qtah.Core.QCoreApplication
+import           Graphics.UI.Qtah.Signal
+import           Graphics.UI.Qtah.Widgets.QApplication as QApplication
+import           Graphics.UI.Qtah.Widgets.QDoubleSpinBox as QDoubleSpinBox
+import           Graphics.UI.Qtah.Widgets.QFormLayout as QFormLayout
+import           Graphics.UI.Qtah.Widgets.QFrame as QFrame
+import           Graphics.UI.Qtah.Widgets.QLabel as QLabel
 import           Graphics.UI.Qtah.Widgets.QWidget (QWidget)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
-import           System.Environment (getArgs)
+import           System.Environment
 
 main :: IO ()
 main = withApp $ \_ -> do
@@ -16,48 +16,48 @@ main = withApp $ \_ -> do
     QWidget.show window
     exec
   where
-    withApp = withScopedPtr $ getArgs >>= QApplication.new
-
-data Input = A | B
+    withApp = withScopedPtr (getArgs >>= QApplication.new)
 
 makeWindow :: IO QWidget
 makeWindow = do
     window <- QWidget.new
 
     -- input
-    sideAInput <- QDoubleSpinBox.new
-    sideBInput <- QDoubleSpinBox.new
+    sideA <- newSideInput
+    sideB <- newSideInput
 
     -- output
     perimeter <- QLabel.new
     diagonal  <- QLabel.new
 
-    let update input x = do
-            (a, b) <- case input of
-                A -> do
-                    b <- QDoubleSpinBox.value sideBInput
-                    pure (x, b)
-                B -> do
-                    a <- QDoubleSpinBox.value sideAInput
-                    pure (a, x)
-            let p = 2 * (a + b)
-            let d = sqrt (a * a + b * b)
-            QLabel.setText perimeter $ show p
-            QLabel.setText diagonal  $ show d
+    let update theOtherSide x = do
+            y <- value theOtherSide
+            let p = 2 * (x + y)
+            let d = sqrt (x * x + y * y)
+            setText perimeter (show p)
+            setText diagonal  (show d)
 
-    update A 0
-    connect_ sideAInput QDoubleSpinBox.valueChangedDoubleSignal $ update A
-    connect_ sideBInput QDoubleSpinBox.valueChangedDoubleSignal $ update B
+    update sideA 0
+    connect_ sideA valueChangedDoubleSignal (update sideB)
+    connect_ sideB valueChangedDoubleSignal (update sideA)
 
-    do  layout <- QFormLayout.new
-        QWidget.setLayout window layout
-
-        QFormLayout.addRowStringWidget layout "Sides" sideAInput
-        QFormLayout.addRowStringWidget layout "" sideBInput
-        do  ruler <- QFrame.new
-            QFrame.setFrameShape ruler QFrame.HLine
-            QFormLayout.addRowWidget layout ruler
-        QFormLayout.addRowStringWidget layout "Perimeter" perimeter
-        QFormLayout.addRowStringWidget layout "Diagonal" diagonal
+    do  form <- QFormLayout.new
+        QWidget.setLayout window form
+        addRowStringWidget form "Sides" sideA
+        addRowStringWidget form ""      sideB
+        addRowWidget form =<< QFrame.new .+ setFrameShape' QFrame.HLine
+        addRowStringWidget form "Perimeter" perimeter
+        addRowStringWidget form "Diagonal"  diagonal
 
     pure window
+
+  where
+    newSideInput = QDoubleSpinBox.new .+ setMaximum' (10 ^ (300 :: Int))
+    setMaximum' = flip QDoubleSpinBox.setMaximum
+    setFrameShape' = flip QFrame.setFrameShape
+
+(.+) :: Monad m => m a -> (a -> m ()) -> m a
+create .+ configure = do
+    a <- create
+    configure a
+    pure a
