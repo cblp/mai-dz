@@ -17,9 +17,13 @@
 /build/
 /db.sqlite*
 /lib
+a.out
 cabal-dev
 cabal.project.local
 cabal.sandbox.config
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles/
 dist
 dist-*
 mai-dz.cabal
