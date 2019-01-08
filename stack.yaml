@@ -1,7 +1,7 @@
-resolver: lts-12.10
+resolver: lts-12.20
 
 packages:
-  # old
+  # old:
   # - .
   # - aw-qt
   # - plan-ga
@@ -22,6 +22,6 @@ extra-deps:
   - qtah-cpp-qt5-0.5.1
   - qtah-generator-0.5.0
 
-  # qtah-generator
+  # qtah-generator:
   - hoppy-generator-0.5.2
   - hoppy-std-0.5.0
