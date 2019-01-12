@@ -1,0 +1,48 @@
+digraph G {
+    node [fontname = "Helvetica", shape = rect];
+
+    {
+        rank = same;
+        PZ [label = "Постановка задачи"];
+        TPO [label = "Требования к ПО", shape = note];
+        PZ -> TPO;
+    }
+
+    {
+        rank = same;
+        A [label = "Анализ"];
+        OR [label = "Оценка реализуемости", shape = note];
+        A -> OR;
+    }
+
+    {
+        rank = same;
+        Pj [label = "Проектирование"];
+        S [label = "Спецификации", shape = note];
+        Pj -> S;
+    }
+
+    {
+        rank = same;
+        Pg [label = "Программирование"];
+        IK [label = "Исходный код", shape = note];
+        Pg -> IK;
+    }
+
+    {
+        rank = same;
+        VP [label = "Выпуск продукта"];
+        D [label = "Документация", shape = note];
+        VP -> D;
+    }
+
+    {
+        rank = same;
+        V [label = "Внедрение"];
+        AV [label = "Акт внедрения", shape = note];
+        V -> AV;
+    }
+
+    PZ  -> A  -> Pj -> Pg -> VP -> V  [weight = 10];
+    TPO -> OR -> S  -> IK -> D  -> AV [style = invis, weight = 10];
+}

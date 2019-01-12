@@ -1,6 +1,4 @@
 digraph G {
-    // splines = ortho;
-
     node [fontname = "Helvetica", shape = rect];
 
     AZ [label = "Анализ задачи"];
