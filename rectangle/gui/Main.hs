@@ -45,17 +45,17 @@ makeWindow = do
         QWidget.setLayout window form
         addRowStringWidget form "Side A" sideA
         addRowStringWidget form "Side B" sideB
-        addRowWidget form =<< QFrame.new .+ (`setFrameShape` QFrame.HLine)
+        addRowWidget form =<< do
+            frame <- QFrame.new
+            setFrameShape frame QFrame.HLine
+            pure frame
         addRowStringWidget form "Perimeter" perimeter
         addRowStringWidget form "Diagonal"  diagonal
 
     pure window
 
   where
-    newSideInput = QDoubleSpinBox.new .+ (`setMaximum` (10 ^ (300 :: Int)))
-
-(.+) :: Monad m => m a -> (a -> m ()) -> m a
-create .+ configure = do
-    a <- create
-    configure a
-    pure a
+    newSideInput = do
+        spin <- QDoubleSpinBox.new
+        setMaximum spin (10 ^ (300 :: Int))
+        pure spin
