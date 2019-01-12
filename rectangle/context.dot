@@ -1,0 +1,23 @@
+digraph G {
+    splines = ortho;
+
+    node [fontname = "Helvetica", shape = none];
+
+    P [label = "План"];
+    ZPP [label = "Заказ\nпрограммного\nпродукта"];
+
+    {
+        rank = same;
+
+        SP [height = 1, label = "Создание ПО", shape = rect, width = 2];
+        VD [label = "Входные данные"];
+        GP [label = "Готовый продукт"];
+        VD -> SP -> GP;
+    };
+
+    R [label = "Разрабочик"];
+    SR [label = "Среда\nразработки"];
+
+    P, ZPP -> SP;
+    SP -> R, SR [dir = back];
+}
