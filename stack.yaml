@@ -7,14 +7,15 @@ packages:
   # - plan-ga
 
   # current:
-  - rectangle
+  - rectangle/cli
+  - rectangle/gui
 
 extra-deps:
   # plan-ga:
   #   - git: https://github.com/afiskon/simple-genetic-algorithm.git
   #     commit: 5c4542351b8e0ac1b10ff9206277ca7de2484338
 
-  # rectangle:
+  # rectangle/gui:
   - qtah-qt5-0.5.1
 
   # qtah-qt5:
