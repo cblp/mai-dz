@@ -1,17 +1,15 @@
-cabal-version: 2.2
+cabal-version: >= 1.10
 name: rectangle
-version: 2018.11
+version: 2019.1
 build-type: Simple
 
 executable rectangle-cli
-    build-depends:
-        base,
+    build-depends: base
+    default-language: Haskell2010
     main-is: Cli.hs
 
 executable rectangle-gui
-    build-depends:
-        base,
-        hoppy-runtime,
-        qtah-qt5,
+    build-depends: base, hoppy-runtime, qtah-qt5
+    default-language: Haskell2010
     ghc-options: -dynamic
     main-is: Gui.hs
