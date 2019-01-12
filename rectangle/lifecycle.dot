@@ -1,0 +1,21 @@
+digraph G {
+    // splines = ortho;
+
+    node [fontname = "Helvetica", shape = rect];
+
+    AZ [label = "Анализ задачи"];
+    E [label = "Эксплуатация"];
+    FD [label = "Формирование документации"];
+    M [label = "Модификация"];
+    O [label = "Отладка"];
+    PA [label = "Проектирование алгоритмов"];
+    PI [label = "Проектирование интерфейса"];
+    R [label = "Реализация"];
+    S [label = "Сдача"];
+    VE [label = "Вывод из эксплуатации"];
+    VT [label = "Выработка требований"];
+
+    AZ -> VT -> PI -> PA -> R -> O -> S -> FD -> E -> VE;
+    R -> M [dir = back, headport = n, tailport = e, weight = 0];
+    M -> S [dir = back, headport = e, tailport = s, weight = 0];
+}
