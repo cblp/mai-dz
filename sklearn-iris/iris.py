@@ -29,13 +29,10 @@ x_test_std  = scaler.transform(x_test)
 #   sklearn.neighbors.KNeighborsClassifier
 
 models = {
-    # 'LogisticRegression': LogisticRegression(),
-    'Perceptron': Perceptron(
-        eta0=0.001,  # less = better
-        max_iter=40,  # greater = better
-        random_state=0,
-        tol=0.001,
+    'LogisticRegression': LogisticRegression(
+        max_iter=100, multi_class='auto', solver='liblinear'
     ),
+    'Perceptron': Perceptron(eta0=0.001, max_iter=100, tol=0.001),
 }
 
 for model_name, model in models.items():
@@ -48,4 +45,4 @@ for model_name, model in models.items():
     #     '\tdeviations in prediction:', deviations, '/', len(y_test), '=',
     #     deviations / len(y_test),
     # )
-    print('\taccuracy_score:', accuracy_score(y_test, y_pred))
+    print('\taccuracy:', accuracy_score(y_test, y_pred))
