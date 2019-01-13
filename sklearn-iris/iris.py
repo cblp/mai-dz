@@ -7,7 +7,7 @@ from   sklearn.metrics import accuracy_score
 from   sklearn.model_selection import train_test_split
 from   sklearn.preprocessing import StandardScaler
 from   sklearn.svm import SVC
-#   sklearn.tree.DecisionTreeClassifier
+from   sklearn.tree import DecisionTreeClassifier
 #   sklearn.neighbors.KNeighborsClassifier
 
 iris = datasets.load_iris()
@@ -25,22 +25,15 @@ x_train_std = scaler.transform(x_train)
 x_test_std  = scaler.transform(x_test)
 # see also sklearn.preprocessing.normalize
 
-models = {
-    LogisticRegression(
-        max_iter=100, multi_class='auto', solver='liblinear'
-    ),
+models = [
     Perceptron(eta0=0.001, max_iter=100, tol=0.001),
+    LogisticRegression(multi_class='auto', solver='liblinear'),
     SVC(),
-}
+    DecisionTreeClassifier(),
+]
 
 for model in models:
-    print(type(model).__name__)
+    print(type(model).__name__ + ':')
     model.fit(x_train_std, y_train)
-
     y_pred = model.predict(x_test_std)
-    deviations = sum(y_pred != y_test)
-    # print(
-    #     '\tdeviations in prediction:', deviations, '/', len(y_test), '=',
-    #     deviations / len(y_test),
-    # )
     print('\taccuracy:', accuracy_score(y_test, y_pred))
