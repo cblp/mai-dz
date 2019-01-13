@@ -8,7 +8,7 @@ from   sklearn.model_selection import train_test_split
 from   sklearn.preprocessing import StandardScaler
 from   sklearn.svm import SVC
 from   sklearn.tree import DecisionTreeClassifier
-#   sklearn.neighbors.KNeighborsClassifier
+from   sklearn.neighbors import KNeighborsClassifier
 
 iris = datasets.load_iris()
 x = iris.data
@@ -30,6 +30,7 @@ models = [
     LogisticRegression(multi_class='auto', solver='liblinear'),
     SVC(),
     DecisionTreeClassifier(),
+    KNeighborsClassifier(),
 ]
 
 for model in models:
