@@ -2,13 +2,15 @@
 
 import numpy as np
 from   sklearn import datasets
-from   sklearn.linear_model import LogisticRegression, Perceptron
 from   sklearn.metrics import accuracy_score
 from   sklearn.model_selection import train_test_split
 from   sklearn.preprocessing import StandardScaler
+
+# models
+from   sklearn.linear_model import LogisticRegression, Perceptron
+from   sklearn.neighbors import KNeighborsClassifier
 from   sklearn.svm import SVC
 from   sklearn.tree import DecisionTreeClassifier
-from   sklearn.neighbors import KNeighborsClassifier
 
 iris = datasets.load_iris()
 x = iris.data
@@ -37,4 +39,4 @@ for model in models:
     print(type(model).__name__ + ':')
     model.fit(x_train_std, y_train)
     y_pred = model.predict(x_test_std)
-    print('\taccuracy:', accuracy_score(y_test, y_pred))
+    print('\taccuracy: {:.0f}%'.format(accuracy_score(y_test, y_pred) * 100))
