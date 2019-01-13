@@ -6,6 +6,9 @@ from   sklearn.linear_model import LogisticRegression, Perceptron
 from   sklearn.metrics import accuracy_score
 from   sklearn.model_selection import train_test_split
 from   sklearn.preprocessing import StandardScaler
+from   sklearn.svm import SVC
+#   sklearn.tree.DecisionTreeClassifier
+#   sklearn.neighbors.KNeighborsClassifier
 
 iris = datasets.load_iris()
 x = iris.data
@@ -22,21 +25,16 @@ x_train_std = scaler.transform(x_train)
 x_test_std  = scaler.transform(x_test)
 # see also sklearn.preprocessing.normalize
 
-# instead of Perceptron use:
-#   LogisticRegression
-#   sklearn.svm.SVC
-#   sklearn.tree.DecisionTreeClassifier
-#   sklearn.neighbors.KNeighborsClassifier
-
 models = {
-    'LogisticRegression': LogisticRegression(
+    LogisticRegression(
         max_iter=100, multi_class='auto', solver='liblinear'
     ),
-    'Perceptron': Perceptron(eta0=0.001, max_iter=100, tol=0.001),
+    Perceptron(eta0=0.001, max_iter=100, tol=0.001),
+    SVC(),
 }
 
-for model_name, model in models.items():
-    print(model_name)
+for model in models:
+    print(type(model).__name__)
     model.fit(x_train_std, y_train)
 
     y_pred = model.predict(x_test_std)
