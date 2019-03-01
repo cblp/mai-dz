@@ -10,7 +10,7 @@ VARIANT = 2 - STUDENT_NUMBER % 2
 
 
 class Perceptron:
-    activate = lambda s: 1 if s >= 0.5 else 0
+    activate = staticmethod(lambda s: 1 if s >= 0.5 else 0)
     x0: float = 1
 
     def __init__(self, learn_factor: float):
