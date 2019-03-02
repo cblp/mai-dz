@@ -10,10 +10,10 @@ VARIANT = 2 - STUDENT_NUMBER % 2
 
 
 class Perceptron:
-    activate = staticmethod(lambda s: 1 if s >= 0.5 else 0)
     x0: float = 1
 
     def __init__(self, learn_factor: float):
+        self.activate = lambda s: 1 if s >= 0.5 else 0
         self.learn_factor = learn_factor
         self.weights = np.random.uniform(-1, 1, size=3)
         self.err_sum = 0
@@ -22,7 +22,7 @@ class Perceptron:
     def predict(self, input_extended: ndarray) -> float:
         return self.activate(np.dot(self.weights, input_extended))
 
-    def learn(self, input: ndarray, target: float) -> float:
+    def learn(self, input: ndarray, target: float):
         input_extended = np.insert(input, 0, self.x0)
         output = self.predict(input_extended)
         err = target - output
@@ -31,7 +31,7 @@ class Perceptron:
         self.err_sum += err * err
         self.sample_count += 1
 
-    def mean_square_error(self):
+    def mean_square_error(self) -> float:
         return self.err_sum / 2 / self.sample_count
 
 
