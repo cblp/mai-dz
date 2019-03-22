@@ -2,6 +2,7 @@
 .hpc
 .hsenv
 .HTF/
+.mypy_cache/
 .stack-work/
 *.aux
 *.chi

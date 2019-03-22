@@ -16,11 +16,11 @@ def make_threshold_activation(threshold: float):
 class Perceptron:
     x0: float = 1
 
-    def __init__(self, learn_factor: float):
+    def __init__(self, learn_factor: float) -> None:
         self.activate = make_threshold_activation(0)
         self.learn_factor = learn_factor
         self.weights = np.random.uniform(-1, 1, size=3)
-        self.err_sum = 0
+        self.err_sum: float = 0
         self.sample_count = 0
 
     def predict(self, input_extended: ndarray) -> float:
