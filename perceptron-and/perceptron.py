@@ -30,7 +30,7 @@ class Perceptron:
     def predict(self, input_extended: ndarray) -> float:
         return self.activate(np.dot(self.weights, input_extended))
 
-    def learn(self, input: ndarray, target: float):
+    def learn(self, input: ndarray, target: float) -> None:
         input_extended = np.insert(input, 0, self.x0)
         output = self.predict(input_extended)
         err = target - output
