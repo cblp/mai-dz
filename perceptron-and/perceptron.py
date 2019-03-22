@@ -9,11 +9,15 @@ STUDENT_NUMBER = 8
 VARIANT = 2 - STUDENT_NUMBER % 2
 
 
+def make_threshold_activation(threshold: float):
+    return lambda x: 1 if x >= threshold else 0
+
+
 class Perceptron:
     x0: float = 1
 
     def __init__(self, learn_factor: float):
-        self.activate = lambda s: 1 if s >= 0.5 else 0
+        self.activate = make_threshold_activation(0)
         self.learn_factor = learn_factor
         self.weights = np.random.uniform(-1, 1, size=3)
         self.err_sum = 0
