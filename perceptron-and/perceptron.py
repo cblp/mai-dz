@@ -2,6 +2,7 @@
 
 import numpy as np
 from numpy import ndarray
+from typing import Callable
 
 
 STUDENT_NAME = 'Юрий Сыровецкий'
@@ -9,7 +10,10 @@ STUDENT_NUMBER = 8
 VARIANT = 2 - STUDENT_NUMBER % 2
 
 
-def make_threshold_activation(threshold: float):
+Activation = Callable[[float], float]
+
+
+def make_threshold_activation(threshold: float) -> Activation:
     return lambda x: 1 if x >= threshold else 0
 
 
